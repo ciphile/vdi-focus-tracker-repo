@@ -1,0 +1,2 @@
+# Focus Tracker chỉ dùng thư viện chuẩn của Python 3.9+ (kể cả phần gọi AI và Telegram).
+# Không cần pip install gì cả.

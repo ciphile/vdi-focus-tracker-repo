@@ -1,0 +1,11 @@
+{
+  "_huong_dan": "Copy file này thành persona.json rồi sửa. AI nhận các thông tin này mỗi lần gọi để trả lời hợp hoàn cảnh của bạn. giong: than_mat | vui_tuoi | hai_huoc | sep_kho_tinh. Để trống ten_sep nếu không muốn bot nhắc tới sếp. Nghề/hệ thống bạn làm ghi ở work_context trong settings.json.",
+  "ten": "",
+  "tuoi": "",
+  "noi_song": "",
+  "goi_nguoi_dung": "bạn",
+  "bot_xung": "mình",
+  "ten_sep": "",
+  "giong": "than_mat",
+  "mo_ta": ""
+}

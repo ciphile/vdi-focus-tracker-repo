@@ -1,0 +1,27 @@
+# File này báo cho Git / GitHub Desktop những gì KHÔNG BAO GIỜ đưa lên GitHub.
+# Xem tài liệu "Hướng dẫn đưa Focus Tracker lên GitHub" và README mục 2.7.
+
+# Token Telegram, key AI: tuyệt đối không đưa lên
+config/secrets.env
+
+# Cài đặt và hồ sơ cá nhân của từng người (mỗi người tự tạo từ file .example)
+config/settings.json
+config/settings.json.bak
+config/persona.json
+config/python_path.txt
+config/python_path.cmd
+
+# Số liệu, log, sao lưu, báo cáo của riêng máy này
+data/
+reports/
+
+# File Python và hệ điều hành tự sinh
+__pycache__/
+*.pyc
+*.tmp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# File ghi chú riêng để trong thư mục app (không phải code)
+File nay cua *
