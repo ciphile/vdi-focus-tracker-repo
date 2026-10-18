@@ -573,9 +573,18 @@ def week_facts(db, cfg, day):
             f"{round(r['ot'] / 3600, 1)}h, tập trung sâu {round(r['deep'] / 3600, 1)}h" for r in off_ot]
         facts["overtime_hours"] = round(sum(r["ot"] for r in off_ot) / 3600, 1)
     if days:
-        best = max(days, key=lambda r: r["deep"])
-        worst = min(days, key=lambda r: r["deep"])
-        label = lambda r: f"{DAY_NAMES[dt.date.fromisoformat(r['day']).weekday()]} {r['day'][5:]} ({round(r['deep'] / 3600, 1)}h)"
+        # Xếp theo điểm tổng (con số chính), hoà thì xét giờ tập trung sâu. Vẫn hoà (hoặc chỉ 1 ngày) thì ghi
+        # "bằng nhau" chứ không gọi cùng một ngày là vừa tốt nhất vừa kém nhất.
+        rank = lambda r: (r.get("total", 0), r["deep"])
+        best, worst = max(days, key=rank), min(days, key=rank)
+        label = lambda r: (f"{DAY_NAMES[dt.date.fromisoformat(r['day']).weekday()]} {r['day'][5:]} "
+                           f"(điểm tổng {r.get('total', 0)}, tập trung sâu {round(r['deep'] / 3600, 1)}h)")
+        if rank(best) == rank(worst):
+            tie = (f"chỉ có 1 ngày làm việc: {label(best)}" if len(days) == 1 else
+                   f"các ngày bằng nhau (điểm tổng {best.get('total', 0)}, tập trung sâu {round(best['deep'] / 3600, 1)}h)")
+            best_day = worst_day = tie
+        else:
+            best_day, worst_day = label(best), label(worst)
         facts.update({
             "deep_hours_total": round(sum(r["deep"] for r in days) / 3600, 1),
             "deep_hours_avg": round(sum(r["deep"] for r in days) / len(days) / 3600, 1),
@@ -584,7 +593,7 @@ def week_facts(db, cfg, day):
             "overtime_hours": round(sum(r.get("ot", 0) for r in days + off_ot) / 3600, 1),
             "days_reached_goal": sum(1 for r in days
                                      if r["deep"] >= day_goal_hours(cfg, leave_part(db, r["day"])) * 3600),
-            "best_day": label(best), "worst_day": label(worst),
+            "best_day": best_day, "worst_day": worst_day, "days_tied": rank(best) == rank(worst),
             "golden_hours": [f"{int(h):02d}:00–{int(h) + 1:02d}:00"
                              for h in sorted(hourly, key=lambda h: -hourly[h])[:2] if hourly[h] > 0],
             "per_day": [f"{r['day'][5:]} {round(r['deep'] / 3600, 1)}h điểm {r.get('score', 0)} điểm tổng {r.get('total', 0)}"

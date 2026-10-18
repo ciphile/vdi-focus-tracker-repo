@@ -60,7 +60,7 @@ class CommandTest(_BotCase):
         out = self.say("/giobot")[0]
         self.assertIn("bật 07:00 – tắt 23:59, thứ 2 – thứ 6 (theo settings.json)", out)
         self.assertIn("chờ tới 07:00", out)
-        self.assertIn("Giờ tắt phải sau 17:00 (gửi tổng kết ngày)", out)
+        self.assertIn("Giờ tắt phải sau 17:05 (gửi tổng kết tuần)", out)
         for k in ("/giobot 08:30 18:00", "/giobot bat 08:30", "/giobot tat 19:00", "/giobot mac_dinh"):
             self.assertIn(k, out)
         self.assertFalse(self.bot.pending)

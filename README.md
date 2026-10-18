@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.5.1 (`focus/__init__.py`) |
+| Phiên bản | 2.6.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -460,7 +460,7 @@ Không có `settings.json` thì app dùng mặc định dưới đây. Việc n�
 | Nhắc rời máy | Sau 15 phút | — | `away_alert_minutes` |
 | Nhắc đứng dậy | Mỗi 60 phút | `/break 45`, `/break off` | `break_reminder_minutes`, `break_reminder_enabled` |
 | Nhắc uống nước | **Tắt** (cài lần đầu) | `/water on`, `/water 45` | `water_reminder_enabled`, `water_reminder_minutes` |
-| Hỏi tổng kết, tổng kết ngày, tổng kết tuần | 16:45, 17:00, thứ 6 16:50 | — | `review_prompt_at`, `daily_summary_at`, `weekly_report_day`, `weekly_report_at` |
+| Hỏi tổng kết, tổng kết ngày, tổng kết tuần | 16:45, 17:00, thứ 6 17:05 | — | `review_prompt_at`, `daily_summary_at`, `weekly_report_day`, `weekly_report_at` |
 | AI tự đánh giá cuối ngày, cuối tuần | Bật | `/aireview off` | `ai_review_enabled` |
 | Nghỉ phép | — | `/leave` (nửa ngày hoặc cả ngày) | `extra_off_days` (ngày nghỉ cố định, ví dụ `["2026-12-24"]`) |
 
@@ -731,9 +731,10 @@ Với cấu hình mặc định (giờ làm 08:00–17:00, trưa 11:15–12:30, 
 14:30  ── câu khích lệ buổi chiều (nếu đang dùng máy)
 15:30  ── mốc tiến độ 3
 16:45  ── hỏi tổng kết (output, issue, phân tâm, AS400, việc mai, năng lượng); không trả lời cũng được
-16:50  ── (thứ Sáu) tổng kết tuần + AI phân tích + lời chúc cuối tuần
 17:00  ── chưa chấm năng lượng thì bot tự tính và báo (🔋), rồi tổng kết ngày + AI đánh giá + lời chúc buổi tối
          + file báo cáo HTML
+17:05  ── (thứ Sáu) tổng kết tuần + AI phân tích + lời chúc cuối tuần (sau tổng kết ngày, nên có đủ số liệu
+         và lời đánh giá của thứ Sáu)
 17:00+ ── không cảnh báo gì nữa
 23:59  ── tracker chốt số liệu và tự thoát (auto_stop_at)
 sáng mai ── nếu hôm qua máy tắt trước 17:00 (hoặc thứ Sáu chưa gửi tuần): gửi bù khi mở máy
@@ -946,6 +947,44 @@ Mỗi mẫu có `vdi_state` là một trong 4 giá trị:
 | Quyền cần | Không cần admin | **Không cần quyền gì** khi dùng app Citrix. Chỉ khi dùng Citrix trong trình duyệt mới cần **Screen Recording** (để đọc tiêu đề tab). Không dùng được CoreGraphics thì dự phòng bằng AppleScript/System Events (cần **Accessibility**, chậm hơn, có thể không nhận ra Space khác) |
 
 Tên process VDI mặc định (`vdi_processes`): `citrix.desktopviewer.app.exe` (Citrix Desktop Viewer bản mới), `cdviewer.exe` (bản cũ), `wfica32.exe`, `msrdc.exe`, `mstsc.exe` (Windows); `citrix viewer`, `windows app`, `microsoft remote desktop` (Mac).
+
+#### App biết cửa sổ nào là VDI bằng cách nào (tóm tắt, Windows)
+
+App **không** mở thư mục cài Citrix và **không** đi tìm file `.exe` mới nhất. Nó đi ngược lại: bắt đầu từ cửa sổ đang mở, hỏi Windows «cửa sổ này do chương trình nào tạo ra», rồi so với danh sách (code: `focus/probe.py`).
+
+```
+Mỗi 5 giây: lấy cửa sổ đang ở trước (và các cửa sổ VDI đã biết)
+   |
+   v
+Đã biết cửa sổ này thuộc file .exe nào chưa? (nhớ theo từng cửa sổ)
+   |-- RỒI --> dùng tên đã nhớ (không hỏi lại Windows)
+   |-- CHƯA --> hỏi Windows đường dẫn đầy đủ của file .exe, ví dụ
+   |            C:\Program Files (x86)\Citrix\ICA Client\...\Citrix.DesktopViewer.App.exe
+   |            (Windows trả lời ngay, không đọc ổ đĩa) rồi nhớ lại
+   v
+Tên file .exe có trong danh sách sẵn (vdi_processes / vdi_session_processes)?
+   |-- CÓ --> là cửa sổ VDI. HẾT
+   |-- KHÔNG
+   v
+Là app Citrix? (tên bắt đầu bằng "citrix" hoặc đường dẫn có \Citrix\)
+   |-- KHÔNG --> app khác (Chrome là trình duyệt thì xét thêm tiêu đề tab, xem bảng
+   |             «Citrix mở bằng app hay bằng trình duyệt»). HẾT
+   |-- CÓ
+   v
+Tiêu đề cửa sổ có chữ «Desktop Viewer» (vdi_title_keywords)?
+   |-- CÓ --> là cửa sổ VDI, dù Citrix đã đổi tên file ở bản mới. HẾT
+   |-- KHÔNG --> xét tiếp trường hợp mặt phiên Citrix tên lạ (luồng chi tiết bên dưới);
+   |             không khớp thì chưa tính là VDI, cửa sổ Citrix lạ to thì /status cảnh báo kèm tên file. HẾT
+```
+
+| Việc | Bao lâu một lần | Ghi chú |
+|---|---|---|
+| Xem cửa sổ nào ở trước; cửa sổ VDI đang hiện, thu nhỏ hay đã biến mất | Mỗi 5 giây (`sample_seconds`) | Đây là mỗi lần đo |
+| Quét lại toàn bộ cửa sổ đang mở để tìm cửa sổ VDI mới (ví dụ vừa mở lại VDI) | Mỗi 30 giây | |
+| Hỏi Windows tên file `.exe` của một cửa sổ | Một lần cho mỗi cửa sổ mới | Nhớ theo cặp cửa sổ + tiến trình; cứ 10 phút xoá trí nhớ một lần cho chắc; không đọc được tên (Citrix chạy quyền Admin, cửa sổ vừa đóng) thì 30 giây sau hỏi lại |
+| Tốn máy | — | Đo trên máy thật: CPU khoảng 0,05–0,1% của một nhân, RAM khoảng 25–30 MB |
+
+Chỉ phải sửa tay khi Citrix đổi **cả** tên file **lẫn** chữ «Desktop Viewer» trên tiêu đề: `/status` báo tên lạ, làm theo luồng «Việc cần làm sau mỗi lần Citrix Workspace cập nhật» bên dưới.
 
 #### Citrix Desktop Viewer trên Windows: khung và mặt phiên
 
@@ -1275,10 +1314,11 @@ Nhắc uống nước trong giờ làm: ĐANG TẮT.
 
 | Kiểu | AI được dặn |
 |---|---|
-| `motivation` | Một câu nói nổi tiếng **có thật**, đúng tác giả, câu nước ngoài dịch tự nhiên |
-| `bible` | Một câu Kinh Thánh **Tin Lành**, chỉ 66 sách, không dùng sách Thứ Kinh/Đệ Nhị Kinh, **nguyên văn bản Truyền Thống 1926**, ghi đúng sách chương câu (ví dụ Ga-la-ti 6:9) |
+| `motivation` | Một câu trong **danh sách danh ngôn có sẵn** (Tuân Tử, Lão Tử, Khổng Tử, Seneca, Marcus Aurelius...), đúng tác giả |
+| `bible` | Một câu Kinh Thánh **Tin Lành** bản Truyền Thống 1926, chọn trong **danh sách câu đã đối chiếu nguyên văn** (ví dụ Ga-la-ti 6:9) |
 | `family` | Lời khích lệ vì gia đình, con cái |
 | Kinh Thánh tắt | Lời dặn hệ thống của **mọi** lần gọi AI có câu «TUYỆT ĐỐI không dùng câu Kinh Thánh hay nội dung tôn giáo…, chỉ dùng châm ngôn người thành đạt, danh nhân, hiền triết xưa» (mục 7.3) |
+| Danh sách câu trích | Model AI miễn phí không thuộc nguyên văn Kinh Thánh 1926 (hay chép sai chữ, đổi ý), nên app gửi kèm mỗi prompt có câu trích (chào sáng, khích lệ, đánh giá ngày / tuần) một **DANH SÁCH CÂU TRÍCH** trong `focus/quotes.py`: 20 câu Kinh Thánh đã đối chiếu từng chữ với bản VI1934 (= Truyền Thống 1926) trên [kinhthanh.httlvn.org](https://kinhthanh.httlvn.org/?v=VI1934), và 16 danh ngôn. AI **chỉ được chọn một câu trong danh sách**, chép nguyên văn và nguồn. Kinh Thánh tắt thì danh sách chỉ có danh ngôn. Câu đã gửi hôm nay, hôm qua được bỏ khỏi danh sách. Muốn thêm câu: đối chiếu với bản gốc trước rồi thêm vào `BIBLE` hoặc `QUOTES` |
 | Mọi kiểu | Luôn tích cực: không chê trách, không nhắc thất bại, không doạ (kể cả giọng sếp khó tính). **Không lặp các câu đã gửi hôm nay và hôm qua**: app gửi kèm **nguyên văn** từng câu trích đã gửi trong 2 ngày đó (tối đa 30 câu, không cắt ngắn) |
 
 **Việc còn tồn, cộng dồn** (`focus/pending.py`, không dùng AI nên luôn có): lời chào sáng có thêm khối liệt kê việc trong kế hoạch và issue **chưa thấy ghi xong**, cộng dồn qua các ngày làm việc. App chỉ biết những gì bạn ghi, nên tin ghi «chưa thấy ghi xong».
@@ -1444,7 +1484,7 @@ AI tự đánh giá cuối ngày (17:00) và cuối tuần: ĐANG BẬT. Nhưng 
 
 | | |
 |---|---|
-| Khi nào | `weekly_report_day` (`fri`) lúc `weekly_report_at` (16:50). Lỡ (máy tắt, thứ Sáu nghỉ) thì gửi bù lần mở máy kế. `/week` xem bất cứ lúc nào |
+| Khi nào | `weekly_report_day` (`fri`) lúc `weekly_report_at` (17:05, sau tổng kết ngày 17:00 để tuần có đủ số liệu và lời đánh giá thứ Sáu). Lỡ (máy tắt, thứ Sáu nghỉ) thì gửi bù lần mở máy kế. `/week` xem bất cứ lúc nào |
 | Nội dung | Tổng giờ tập trung sâu, trung bình/ngày, số ngày đạt, điểm tập trung TB, **điểm tổng TB**, giờ làm ngoài giờ (cả làm bù ngày nghỉ, dòng «Làm bù ngày nghỉ»), chuỗi, ngày tốt/kém nhất, giờ vàng, từng ngày, khối 🌙 **OT 14 ngày gần nhất** + **🤖 AI tổng kết tuần** (9 mục, tối đa 24 dòng: **điểm tổng của tuần** (bắt buộc: điểm tổng trung bình nghĩa là gì, thành phần trung bình, ngày cao / thấp nhất và vì sao, phần kéo điểm xuống, tuần sau cải thiện gì), đánh giá chung, ngày tốt/kém, việc xong/pending, issue lặp lại, quy luật mất tập trung, mục tiêu tuần sau, câu khích lệ, **lời chúc**: cuối tuần nếu tuần tính tới thứ Sáu trở đi, chúc buổi tối nếu xem `/week` giữa tuần) |
 | AI đọc gì | Báo cáo đầy đủ **từng ngày** (số liệu, kế hoạch, output, issue, phân tâm, năng lượng, giờ AS400, việc hẹn sáng mai, lời AI đánh giá đã gửi hôm đó), ngày nghỉ, tuần trước để so sánh (mục 7.4) |
 | File | Sau lời AI: file **báo cáo tuần HTML** `reports/focus-week-YYYY-Www.html` (mục 4.22), cả khi gõ `/week` |
@@ -1455,7 +1495,7 @@ Tuần 2026-W42 (10-12 → 10-14)
 Tập trung sâu: 12.3h, trung bình 4.1h/ngày
 Đạt mục tiêu: 2/3 ngày · điểm TB 93 · điểm tổng TB 84 · làm ngoài giờ 0.7h
 Chuỗi hiện tại: 2 ngày
-Ngày tốt nhất: Thứ 4 10-14 (4.1h) · kém nhất: Thứ 2 10-12 (3.8h)
+Ngày tốt nhất: Thứ 4 10-14 (điểm tổng 88, tập trung sâu 4.1h) · kém nhất: Thứ 2 10-12 (điểm tổng 79, tập trung sâu 3.8h)
 Giờ vàng: 09:00–10:00, 10:00–11:00
 
 Từng ngày:
@@ -1582,7 +1622,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.5.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.6.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1689,7 +1729,7 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 
 | | Báo cáo ngày | Báo cáo tuần |
 |---|---|---|
-| Tạo | `/report` (gửi file qua Telegram), `/report hôm qua`, `/report 14/10` (cách gõ ngày như mục 4.15), tổng kết 17:00, `bao_cao_hom_nay.bat`, `python focus_tracker.py report [YYYY-MM-DD]`. Ngày nghỉ có làm bù: gửi cùng 🌙 tổng kết làm bù (mục 4.15) | Tổng kết tuần (thứ Sáu 16:50) và `/week` |
+| Tạo | `/report` (gửi file qua Telegram), `/report hôm qua`, `/report 14/10` (cách gõ ngày như mục 4.15), tổng kết 17:00, `bao_cao_hom_nay.bat`, `python focus_tracker.py report [YYYY-MM-DD]`. Ngày nghỉ có làm bù: gửi cùng 🌙 tổng kết làm bù (mục 4.15) | Tổng kết tuần (thứ Sáu 17:05) và `/week` |
 | Ở đâu | `reports/focus-YYYY-MM-DD.html` | `reports/focus-week-YYYY-Www.html` (ví dụ `focus-week-2026-W42.html`) |
 | Phần đầu | **Điểm tổng** thật to + robot quà tặng trong vòng tròn chấm bi, mức (kém / HG / RG / MG / PG), thanh từng thành phần (bao nhiêu điểm, góp bao nhiêu), phần kéo điểm xuống nhiều nhất, cách tăng điểm, **thang 5 robot** (robot hôm nay được tô nổi) | **Điểm tổng trung bình tuần** + robot, thành phần trung bình, ngày cao / thấp nhất, **bộ sưu tập robot** từng ngày |
 | Ô số liệu (6 ô màu) | Tập trung sâu (so mục tiêu), trong VDI, ngoài VDI (số lần rời, **TB mỗi lần**), thu nhỏ VDI (số lần, **TB mỗi lần**), ngồi yên (số lần, **TB mỗi lần**), rời máy (số lần, **TB mỗi lần**). «TB mỗi lần» = trung bình một lần kéo dài bao lâu, không phải trung bình cả ngày | Cùng 6 ô, cộng cả tuần; thêm TB mỗi ngày |
@@ -2039,15 +2079,16 @@ BỐI CẢNH (bạn không có trí nhớ giữa các lần gọi, mọi thông 
 - Bạn là trợ lý của "Focus Tracker", một app nhỏ chạy trên máy tính của người dùng (laptop), nói chuyện với người dùng qua bot Telegram.
 - Người dùng làm việc bên trong máy ảo VDI (Citrix Desktop Viewer). App chỉ đo từ bên ngoài: cửa sổ nào đang ở trước, chuột/bàn phím có dùng không, máy có khoá không. App KHÔNG đọc nội dung màn hình, email hay code.
 - Luật tính tập trung: chỉ thời gian cửa sổ VDI ở trước VÀ có thao tác chuột/phím mới tính là làm việc. VDI bị thu nhỏ (minimize), nằm sau app khác, hoặc dùng app ngoài VDI đều tính là KHÔNG tập trung. "Tập trung sâu" là các khối làm liên tục trong VDI từ 20 phút trở lên.
+- App ngoài VDI (trình duyệt, công cụ AI, ghi chú, chat với đồng nghiệp...) có thể là việc phục vụ công việc: gọi là "thời gian ngoài VDI", không khẳng định người dùng đang chơi, không chê "nghiện" hay "bỏ bê" app nào.
 - Sao nhãng, ngồi yên, rời máy CHỈ đo trong giờ làm chính thức (không tính giờ nghỉ trưa). Ngoài giờ (trước / sau giờ làm, thứ Bảy, Chủ nhật, ngày lễ có bật bot) app chỉ cộng thêm thời gian làm trong VDI (làm ngoài giờ / OT, ví dụ làm bù buổi tối), không ghi sao nhãng.
 
 - Công việc của người dùng: Lập trình viên/BA hệ thống lõi bảo hiểm nhân thọ Life Asia (LifeAsia, CSC/DXC) chạy trên IBM i (AS400), viết bằng COBOL (ILE COBOL), CL, DB2 for i; việc hằng ngày gồm sửa và test chương trình, batch job, spooled file, đối soát dữ liệu hợp đồng, xử lý yêu cầu nghiệp vụ (phát hành, thu phí, bồi thường, đáo hạn); làm việc qua máy ảo VDI Citrix.
 - Giờ làm 08:00–17:00, nghỉ trưa 11:15–12:30. Mục tiêu tập trung sâu: 4 giờ/ngày.
 
 CÁCH NÓI:
-- Viết tiếng Việt, gửi qua Telegram: văn bản thường, không tiêu đề markdown, không bảng, tối đa 1–2 emoji (giọng sếp khó tính thì không emoji).
+- Viết tiếng Việt, gửi qua Telegram: văn bản thường, không tiêu đề markdown, không bảng. Emoji: tin ngắn tối đa 1–2 emoji; tin chia nhiều mục (đánh giá ngày / tuần) thì mỗi mục đúng một emoji ở đầu mục, không thêm emoji khác. Giọng sếp khó tính thì không emoji, mục chỉ mở đầu bằng tên mục.
 - Cụ thể, dựa trên số liệu được cung cấp, không bịa số, không lên lớp chung chung.
-- Không bịa câu trích dẫn hay nguồn; câu trích dẫn giữ nguyên văn, ghi đúng nguồn.
+- Không bịa câu trích dẫn hay nguồn. Prompt có DANH SÁCH CÂU TRÍCH thì câu trích chỉ lấy trong danh sách đó, chép đúng từng chữ và nguồn; không có danh sách thì chỉ trích khi chắc chắn nguyên văn.
 - Người dùng TẮT Kinh Thánh: TUYỆT ĐỐI không dùng câu Kinh Thánh hay nội dung tôn giáo trong mọi tin nhắn (chào buổi sáng, khích lệ, nhắc nhở, cảnh báo, đánh giá), trừ khi chính người dùng xin câu Kinh Thánh (lệnh /bible). Câu trích dẫn chỉ dùng châm ngôn, câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa (ví dụ Khổng Tử, Mạnh Tử, Lão Tử, Seneca, Marcus Aurelius), ghi đúng tác giả; không chắc tác giả thì chọn câu khác.
 - Gọi người dùng là "bạn", tự xưng là "mình". Giọng thân mật, ấm áp như một người bạn thân. Người dùng tên Minh. Tuổi: 35. Sống ở: TP.HCM, Việt Nam. Về người dùng: Dev AS400 5 năm, có 2 con nhỏ.
 ```
@@ -2058,7 +2099,9 @@ CÁCH NÓI:
 |---|---|
 | Lần gọi nào cũng có bối cảnh | `ai_client.generate` (cửa duy nhất ra AI) gọi `ai_context.ensure_context`: system chưa có khối «BỐI CẢNH (bạn không có trí nhớ...» thì tự thêm toàn bộ system prompt lên đầu. Đọc ảnh AS400, `ai-test`, hiểu tin nhắn, khích lệ, chào sáng, hỏi AI, đánh giá ngày/tuần đều có. Có test kiểm từng câu của bối cảnh |
 | Bạn tự chỉnh được | `work_context`, `work_start`/`work_end`, `lunch_start`/`lunch_end`, `daily_focus_goal_hours`, `min_focus_block_minutes` trong `settings.json`; tên, xưng hô, giọng, sếp, tuổi, công việc trong `persona.json` hoặc `/style`. Đổi xong là lần gọi AI kế tiếp dùng giá trị mới, cho **mọi** loại prompt |
-| Câu trích theo nút Kinh Thánh | Dòng cuối khối CÁCH NÓI là `quote_rule`: Kinh Thánh **bật** (bản render trên) thì «dùng câu Kinh Thánh Tin Lành bản Truyền Thống 1926…»; **tắt** (`/kinhthanh off`) thì «TUYỆT ĐỐI không dùng câu Kinh Thánh hay nội dung tôn giáo trong mọi tin nhắn…, chỉ dùng châm ngôn, câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa». Vì nằm trong system prompt nên áp cho **mọi** lời gọi AI: chào sáng, khích lệ, nhắc, đánh giá ngày / tuần, hỏi AI |
+| Câu trích theo nút Kinh Thánh | Dòng cuối khối CÁCH NÓI là `quote_rule`: Kinh Thánh **bật** (bản render trên) thì «có thể dùng câu Kinh Thánh Tin Lành bản Truyền Thống 1926…»; **tắt** (`/kinhthanh off`) thì «TUYỆT ĐỐI không dùng câu Kinh Thánh hay nội dung tôn giáo trong mọi tin nhắn…, chỉ dùng châm ngôn, câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa». Vì nằm trong system prompt nên áp cho **mọi** lời gọi AI: chào sáng, khích lệ, nhắc, đánh giá ngày / tuần, hỏi AI. Câu trích cụ thể thì AI chỉ được chọn trong DANH SÁCH CÂU TRÍCH gửi kèm prompt (mục 4.8, `focus/quotes.py`) |
+| App ngoài VDI không phải tội | Khối BỐI CẢNH có câu «App ngoài VDI (trình duyệt, công cụ AI, ghi chú, chat với đồng nghiệp...) có thể là việc phục vụ công việc…»: AI gọi là «thời gian ngoài VDI», không chê «nghiện» hay «bỏ bê». Tổng kết tuần chỉ nêu issue bạn tự ghi (`/issue`), không lấy số liệu sao nhãng làm issue |
+| Emoji | Tin ngắn tối đa 1–2 emoji; đánh giá ngày / tuần thì mỗi mục đúng một emoji ở đầu, mỗi mục một đoạn riêng (giọng sếp khó tính: không emoji) |
 | Cache đánh giá | Khoá cache đánh giá ngày/tuần có mã băm của **toàn bộ** system prompt: đổi bất kỳ thông số nào ở trên thì đánh giá được viết lại, không dùng bản cũ |
 
 ### 7.4 Dữ liệu gửi AI, tách theo ngày
@@ -2111,7 +2154,8 @@ CẤU TRÚC SỐ LIỆU (app đã tính sẵn và tách theo ngày, không cần
   phần và nó đến từ số liệu gốc nào), biggest_loss (phần kéo điểm xuống nhiều nhất), how_to_raise (làm gì để tăng
   điểm, tăng khoảng bao nhiêu). Dùng ĐÚNG các con số đó, không tự tính lại, không bịa số khác.
 
-Viết tối đa 19 dòng, đúng thứ tự 7 mục sau (mỗi mục mở đầu bằng emoji và tên mục ngắn do bạn tự đặt, không markdown):
+Viết tối đa 19 dòng, đúng thứ tự 7 mục sau. Mỗi mục là một đoạn riêng, bắt đầu ở dòng mới, mở đầu bằng một emoji
+và tên mục ngắn do bạn tự đặt (không markdown); không gộp hai mục vào một đoạn, không bỏ mục nào:
 1. Điểm tổng hôm nay (BẮT BUỘC, 3–5 dòng, viết cho người chưa từng nghe tới điểm tổng):
    - Câu đầu: điểm tổng hôm nay là today.total_score/100 (today.total_score_10/10), nghĩa là mức gì (lấy từ
      today.total_score_explained.meaning), kèm robot quà today.gift_robot cho vui.
@@ -2138,13 +2182,32 @@ Viết tối đa 19 dòng, đúng thứ tự 7 mục sau (mỗi mục mở đầ
    cần khắc phục chung chung.
 5. Ngày mai cải thiện: 1–2 hành động rất cụ thể, làm được, có giờ giấc (ví dụ chặn khung giờ vàng, tắt app nào, để điện thoại ở đâu).
    Nếu today có "science_advice" (điểm tổng dưới 50): thêm đúng một câu dựa trên dữ kiện đó (giữ tên tác giả, năm,
-   con số như đã cho), nối với lý do làm việc vì gia đình. Không có trường này thì KHÔNG tự nêu nghiên cứu nào.
-6. Một câu khích lệ ngắn hợp giọng văn (là châm ngôn / câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa, ghi đúng tác giả; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh). Câu phải nâng đỡ, tích cực, cho thêm sức (kể cả khi ngày kém):
-   không chọn câu răn đe, chê trách (ví dụ câu về sự biếng nhác). Câu trích phải đúng nguyên văn; không chắc nguyên
-   văn thì chọn câu khác.
+   con số như đã cho), nối với lý do làm việc vì gia đình, nói bằng cách xưng hô đã dặn (không chép nguyên chữ
+   "bạn" nếu xưng hô khác). Không có trường này thì KHÔNG tự nêu nghiên cứu nào.
+6. Một câu khích lệ ngắn hợp giọng văn, kèm MỘT câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (chỉ có châm ngôn, câu nói của người thành đạt, danh nhân; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh), chép nguyên văn và tác giả. Câu phải nâng đỡ, tích cực, cho thêm sức (kể cả khi ngày kém):
+   chọn câu hợp với ngày hôm nay, không chọn câu nghe như răn đe, chê trách.
 7. Dòng cuối: lời chúc buổi tối ấm áp, thư giãn bên gia đình, tự nhiên, hợp giọng văn (sếp khó tính thì chúc ngắn gọn nhưng vẫn chân thành).
 Không chép lại toàn bộ số liệu (riêng điểm tổng ở mục 1 thì phải giải thích đủ). Thiếu số liệu ở mục nào thì nói
 ngắn gọn rồi bỏ qua, không bịa.
+
+DANH SÁCH CÂU TRÍCH ĐƯỢC DÙNG (app đã đối chiếu nguyên văn): cần câu trích thì CHỈ chọn MỘT câu trong danh sách này, chép đúng từng chữ và ghi đúng nguồn như bên dưới, đặt trong ngoặc kép. Không sửa chữ, không ghép câu, không dùng câu nào ngoài danh sách.
+Danh ngôn:
+- "Đường tuy ngắn, không đi không bao giờ đến; việc tuy nhỏ, không làm chẳng bao giờ nên." — Tuân Tử
+- "Thất bại là mẹ thành công." — Tục ngữ
+- "Hành trình vạn dặm bắt đầu từ một bước chân." — Lão Tử
+- "Không có việc gì khó, chỉ sợ lòng không bền. Đào núi và lấp biển, quyết chí ắt làm nên." — Hồ Chí Minh
+- "Có công mài sắt, có ngày nên kim." — Tục ngữ
+- "Ngã bảy lần, đứng dậy tám lần." — Ngạn ngữ Nhật Bản
+- "Chúng ta là những gì chúng ta làm lặp đi lặp lại. Xuất sắc không phải là một hành động, mà là một thói quen." — Will Durant
+- "Kỷ luật là cầu nối giữa mục tiêu và thành tựu." — Jim Rohn
+- "Việc khó nhất là quyết định hành động, phần còn lại chỉ là sự kiên trì." — Amelia Earhart
+- "Tôi không thất bại. Tôi chỉ tìm ra 10.000 cách không hiệu quả." — Thomas Edison
+- "Ví như đắp núi, chỉ còn thiếu một sọt đất mà dừng, ấy là tự ta dừng." — Khổng Tử, Luận Ngữ 9.19
+- "Trời sắp giao trọng trách cho người nào, ắt trước hết làm khổ tâm chí, nhọc gân cốt người ấy." — Mạnh Tử, Cáo Tử hạ
+- "Không phải vì việc khó mà ta không dám làm; chính vì ta không dám làm nên việc mới khó." — Seneca, Thư gửi Lucilius 104
+- "Cái cản đường hành động lại thúc đẩy hành động. Chướng ngại trên đường trở thành con đường." — Marcus Aurelius, Suy Tưởng 5.20
+- "Làm tốt hơn nói hay." — Benjamin Franklin
+- "Cách duy nhất để làm được việc tuyệt vời là yêu điều bạn làm." — Steve Jobs, Stanford 2005
 
 Ý nghĩa các trường số liệu:
 - report_date: ngày đang được đánh giá (chỉ đánh giá ngày này)
@@ -2343,7 +2406,8 @@ Cách đọc trước khi viết (không cần viết ra các bước này):
   phần và nó đến từ số liệu gốc nào), biggest_loss (phần kéo điểm xuống nhiều nhất), how_to_raise (làm gì để tăng
   điểm, tăng khoảng bao nhiêu). Dùng ĐÚNG các con số đó, không tự tính lại, không bịa số khác.
 
-Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự (mỗi mục mở đầu bằng emoji và tên mục ngắn do bạn tự đặt, không markdown):
+Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự dưới đây. Mỗi mục là một đoạn riêng, bắt đầu ở dòng mới, mở đầu
+bằng một emoji và tên mục ngắn do bạn tự đặt (không markdown); không gộp hai mục vào một đoạn:
 1. Điểm tổng của tuần (BẮT BUỘC, 3–5 dòng, viết cho người chưa từng nghe tới điểm tổng): điểm tổng trung bình
    week_summary.avg_total_score/100 nghĩa là mức gì (total_score_explained.meaning); điểm tổng gộp từ những thành phần
    nào và trung bình mỗi phần bao nhiêu (avg_parts); ngày điểm cao nhất, thấp nhất và vì sao, dựa trên thành phần của
@@ -2351,14 +2415,38 @@ Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự (mỗi mục mở
    điểm. So với tuần trước nếu có.
 2. Đánh giá chung: tuần tốt/ổn/chưa tốt, số ngày đạt mục tiêu, giờ tập trung sâu, xu hướng trong tuần.
 3. Ngày tốt nhất và kém nhất: nguyên nhân dựa trên số liệu và ghi chú của chính ngày đó (gộp với mục 1 nếu đã nói).
+   Nếu best_day / worst_day ghi "bằng nhau" hoặc chỉ có 1 ngày thì nói vậy, không gọi ngày nào là tốt nhất / kém nhất.
 4. Việc đã xong và việc còn pending sang tuần sau: dựa trên plan/output/tomorrow/issue, nêu tên việc cụ thể.
-5. Issue lặp lại: mỗi nhóm 1 dòng kèm số lần và một bước khắc phục cụ thể sát bối cảnh công việc.
-6. Mất tập trung: quy luật chính của tuần và cách giảm.
+5. Issue lặp lại: CHỈ lấy issue người dùng tự ghi (trường "issues" của từng ngày trong "days"). Mỗi nhóm 1 dòng kèm
+   số lần và một bước khắc phục cụ thể sát bối cảnh công việc. Không có issue nào thì viết đúng một dòng ngắn "tuần
+   này chưa ghi issue nào" và nhắc /issue; KHÔNG lấy số liệu sao nhãng hay thời gian ngoài VDI làm issue, không tự
+   nghĩ ra issue.
+6. Mất tập trung: quy luật chính của tuần và cách giảm. App ngoài VDI có thể là việc liên quan công việc (ghi chú,
+   tra cứu, công cụ AI, chat với đồng nghiệp): nói là "thời gian ngoài VDI", không khẳng định người dùng đang chơi,
+   không dùng từ "nghiện" hay "bỏ bê".
 7. Mục tiêu tuần sau: 1–2 mục tiêu nhỏ, đo được, có ngày giờ cụ thể (ví dụ giữ giờ vàng cho việc gì).
-8. Một câu khích lệ ngắn hợp giọng văn (là châm ngôn / câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa, ghi đúng tác giả; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh): nâng đỡ, tích cực, không răn đe chê trách; câu trích đúng
-   nguyên văn.
+8. Một câu khích lệ ngắn hợp giọng văn, kèm MỘT câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (chỉ có châm ngôn, câu nói của người thành đạt, danh nhân; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh), chép nguyên văn và tác giả: nâng đỡ, tích cực, không răn đe chê trách.
 9. Dòng cuối: lời chúc cuối tuần vui vẻ, nghỉ ngơi trọn vẹn bên gia đình, ấm áp, tự nhiên, hợp giọng văn (sếp khó tính thì chúc ngắn gọn nhưng vẫn chân thành).
 Chỉ dùng số liệu và ghi chú được cung cấp; thiếu thì nói ngắn rồi bỏ qua, không bịa.
+
+DANH SÁCH CÂU TRÍCH ĐƯỢC DÙNG (app đã đối chiếu nguyên văn): cần câu trích thì CHỈ chọn MỘT câu trong danh sách này, chép đúng từng chữ và ghi đúng nguồn như bên dưới, đặt trong ngoặc kép. Không sửa chữ, không ghép câu, không dùng câu nào ngoài danh sách.
+Danh ngôn:
+- "Đường tuy ngắn, không đi không bao giờ đến; việc tuy nhỏ, không làm chẳng bao giờ nên." — Tuân Tử
+- "Thất bại là mẹ thành công." — Tục ngữ
+- "Hành trình vạn dặm bắt đầu từ một bước chân." — Lão Tử
+- "Không có việc gì khó, chỉ sợ lòng không bền. Đào núi và lấp biển, quyết chí ắt làm nên." — Hồ Chí Minh
+- "Có công mài sắt, có ngày nên kim." — Tục ngữ
+- "Ngã bảy lần, đứng dậy tám lần." — Ngạn ngữ Nhật Bản
+- "Chúng ta là những gì chúng ta làm lặp đi lặp lại. Xuất sắc không phải là một hành động, mà là một thói quen." — Will Durant
+- "Kỷ luật là cầu nối giữa mục tiêu và thành tựu." — Jim Rohn
+- "Việc khó nhất là quyết định hành động, phần còn lại chỉ là sự kiên trì." — Amelia Earhart
+- "Tôi không thất bại. Tôi chỉ tìm ra 10.000 cách không hiệu quả." — Thomas Edison
+- "Ví như đắp núi, chỉ còn thiếu một sọt đất mà dừng, ấy là tự ta dừng." — Khổng Tử, Luận Ngữ 9.19
+- "Trời sắp giao trọng trách cho người nào, ắt trước hết làm khổ tâm chí, nhọc gân cốt người ấy." — Mạnh Tử, Cáo Tử hạ
+- "Không phải vì việc khó mà ta không dám làm; chính vì ta không dám làm nên việc mới khó." — Seneca, Thư gửi Lucilius 104
+- "Cái cản đường hành động lại thúc đẩy hành động. Chướng ngại trên đường trở thành con đường." — Marcus Aurelius, Suy Tưởng 5.20
+- "Làm tốt hơn nói hay." — Benjamin Franklin
+- "Cách duy nhất để làm được việc tuyệt vời là yêu điều bạn làm." — Steve Jobs, Stanford 2005
 
 Ý nghĩa các trường số liệu:
 - day / weekday: ngày của khối số liệu chứa nó
@@ -2394,7 +2482,7 @@ Chỉ dùng số liệu và ghi chú được cung cấp; thiếu thì nói ng�
 - tomorrow: việc đầu tiên sáng mai người dùng đã ghi
 - pending_carry: việc tồn chuyển sang ngày làm việc kế: kế hoạch và issue của ngày này và các ngày trước chưa thấy ghi xong trong output, cộng dồn, ghi ngày bắt đầu tồn
 - as400: giờ vào/ra AS400 hôm nay
-- per_day / best_day / worst_day / golden_hours: số liệu từng ngày trong tuần, ngày tốt nhất/kém nhất, giờ vàng của tuần
+- per_day / best_day / worst_day / golden_hours: số liệu từng ngày trong tuần, ngày tốt nhất/kém nhất (xếp theo điểm tổng, hoà thì theo giờ tập trung sâu; ghi "bằng nhau" khi hoà, lúc đó đừng gọi ngày nào là tốt nhất hay kém nhất), giờ vàng của tuần
 - deep_hours_total / deep_hours_avg / avg_score / days_reached_goal / work_days: tổng / trung bình giờ tập trung sâu của tuần, điểm trung bình, số ngày đạt mục tiêu, số ngày làm việc
 - avg_total_score / overtime_hours: điểm tổng trung bình của tuần, tổng giờ làm trong VDI ngoài giờ (OT)
 - ai_daily_review: lời đánh giá AI đã gửi người dùng cuối ngày đó (để xem lời khuyên có được làm theo không)
@@ -2415,8 +2503,9 @@ SỐ LIỆU (JSON):
   "avg_total_score": 82,
   "overtime_hours": 0.0,
   "days_reached_goal": 0,
-  "best_day": "Thứ 6 10-09 (3.1h)",
-  "worst_day": "Thứ 2 10-05 (2.8h)",
+  "best_day": "Thứ 6 10-09 (điểm tổng 86, tập trung sâu 3.1h)",
+  "worst_day": "Thứ 5 10-08 (điểm tổng 76, tập trung sâu 2.8h)",
+  "days_tied": false,
   "golden_hours": [
    "09:00–10:00",
    "10:00–11:00"
@@ -2689,7 +2778,7 @@ SỐ LIỆU (JSON):
 
 ```
 VIỆC CẦN LÀM: viết tin nhắn chào buổi sáng, gửi tự động qua Telegram lúc người dùng bắt đầu ngày làm việc.
-Chọn MỘT câu Kinh Thánh của Tin Lành (Cơ Đốc giáo Tin Lành) về đừng bỏ cuộc, đừng nản lòng, sức mới, phó thác, bình an, hoặc làm việc hết lòng. Chỉ dùng 66 sách Kinh Thánh Tin Lành, KHÔNG dùng các sách Thứ Kinh/Đệ Nhị Kinh (Tô-bi-a, Giu-đi-tha, Khôn Ngoan, Huấn Ca, Ma-ca-bê, Ba-rúc) và không dùng tên sách theo bản Công giáo. Trích nguyên văn theo bản dịch Truyền Thống 1926 (bản Hội Thánh Tin Lành Việt Nam dùng), ghi đúng sách chương câu (ví dụ Ga-la-ti 6:9). Không chắc chữ chính xác thì chọn câu quen thuộc khác.
+Chọn MỘT câu Kinh Thánh (Tin Lành, bản Truyền Thống 1926) trong DANH SÁCH CÂU TRÍCH bên dưới, hợp tình huống (đừng bỏ cuộc, sức mới, phó thác, bình an, làm việc hết lòng). Chỉ 66 sách Kinh Thánh Tin Lành, KHÔNG dùng các sách Thứ Kinh/Đệ Nhị Kinh và tên sách theo bản Công giáo.
 Lời khích lệ LUÔN tích cực, ấm áp, đầy hy vọng: không chê trách, không nhắc thất bại, không so sánh tiêu cực, không doạ nạt (kể cả giọng sếp khó tính: nghiêm nhưng vẫn khích lệ).
 
 THÔNG TIN (JSON, app đã tách sẵn theo ngày):
@@ -2711,7 +2800,7 @@ THÔNG TIN (JSON, app đã tách sẵn theo ngày):
 
 Viết 3–5 dòng, văn bản thường:
 1. Một câu chào buổi sáng ngắn, đúng giọng văn và cách xưng hô.
-2. Câu trích (nguyên văn, kèm nguồn) trên một dòng riêng.
+2. Câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (chép nguyên văn, kèm nguồn) trên một dòng riêng.
 3. Một câu nối ý câu trích với hôm nay: nếu today có first_task thì khích lệ bắt đầu ngay bằng việc đó; nếu có
    previous_workday thì chỉ nhắc điểm tốt của ngày đó (không nhắc điểm yếu).
 4. Nếu today có pending_from_previous_workday (việc trong kế hoạch và issue các ngày trước chưa thấy ghi xong, cộng
@@ -2719,6 +2808,29 @@ Viết 3–5 dòng, văn bản thường:
    app sẽ TỰ gửi nguyên danh sách ngay dưới tin nhắn của bạn, nên bạn KHÔNG chép lại danh sách; chỉ thêm một câu nhẹ
    nhàng khích lệ xử lý dứt điểm các việc còn tồn (có thể nêu tên 1 việc quan trọng nhất), không trách móc.
 Không chèn số liệu khô khan, không lên lớp.
+
+DANH SÁCH CÂU TRÍCH ĐƯỢC DÙNG (app đã đối chiếu nguyên văn): cần câu trích thì CHỈ chọn MỘT câu trong danh sách này, chép đúng từng chữ và ghi đúng nguồn như bên dưới, đặt trong ngoặc kép. Không sửa chữ, không ghép câu, không dùng câu nào ngoài danh sách.
+Kinh Thánh (bản Truyền Thống 1926):
+- "Tôi làm được mọi sự nhờ Đấng ban thêm sức cho tôi." (Phi-líp 4:13)
+- "Chớ mệt nhọc về sự làm lành, vì nếu chúng ta không trễ nải, thì đến kỳ chúng ta sẽ gặt." (Ga-la-ti 6:9)
+- "Nhưng ai trông đợi Đức Giê-hô-va thì chắc được sức mới, cất cánh bay cao như chim ưng; chạy mà không mệt nhọc, đi mà không mòn mỏi." (Ê-sai 40:31)
+- "Hãy vững lòng bền chí, chớ run sợ, chớ kinh khủng; vì Giê-hô-va Đức Chúa Trời ngươi vẫn ở cùng ngươi trong mọi nơi ngươi đi." (Giô-suê 1:9)
+- "Hễ làm việc gì, hãy hết lòng mà làm, như làm cho Chúa, chớ không phải làm cho người ta." (Cô-lô-se 3:23)
+- "Hỡi những kẻ mệt mỏi và gánh nặng, hãy đến cùng ta, ta sẽ cho các ngươi được yên nghỉ." (Ma-thi-ơ 11:28)
+- "Hãy phó các việc mình cho Đức Giê-hô-va, thì những mưu ý mình sẽ được thành công." (Châm-ngôn 16:3)
+- "Đừng sợ, vì ta ở với ngươi; chớ kinh khiếp, vì ta là Đức Chúa Trời ngươi! Ta sẽ bổ sức cho ngươi." (Ê-sai 41:10)
+- "Ân điển ta đủ cho ngươi rồi, vì sức mạnh của ta nên trọn vẹn trong sự yếu đuối." (II Cô-rinh-tô 12:9)
+- "Kìa, con cái là cơ nghiệp bởi Đức Giê-hô-va mà ra; bông trái của tử cung là phần thưởng." (Thi-thiên 127:3)
+- "Đức Giê-hô-va là Đấng chăn giữ tôi; tôi sẽ chẳng thiếu thốn gì." (Thi-thiên 23:1)
+- "Hãy trao gánh nặng ngươi cho Đức Giê-hô-va, Ngài sẽ nâng đỡ ngươi; Ngài sẽ chẳng hề cho người công bình bị rúng động." (Thi-thiên 55:22)
+- "Hãy phó thác đường lối mình cho Đức Giê-hô-va, và nhờ cậy nơi Ngài, thì Ngài sẽ làm thành việc ấy." (Thi-thiên 37:5)
+- "Đức Chúa Trời là nơi nương náu và sức lực của chúng tôi, Ngài sẵn giúp đỡ trong cơn gian truân." (Thi-thiên 46:1)
+- "Nầy là ngày Đức Giê-hô-va làm nên, chúng tôi sẽ mừng rỡ và vui vẻ trong ngày ấy." (Thi-thiên 118:24)
+- "Hãy hết lòng tin cậy Đức Giê-hô-va, chớ nương cậy nơi sự thông sáng của con; phàm trong các việc làm của con, khá nhận biết Ngài, thì Ngài sẽ chỉ dẫn các nẻo của con." (Châm-ngôn 3:5-6)
+- "Ấy là nhờ sự nhơn từ Đức Giê-hô-va mà chúng ta chưa tuyệt. Vì sự thương xót của Ngài chẳng dứt. Mỗi buổi sáng thì lại mới luôn, sự thành tín Ngài là lớn lắm." (Ca-thương 3:22-23)
+- "Vậy, chớ lo lắng chi về ngày mai; vì ngày mai sẽ lo về việc ngày mai. Sự khó nhọc ngày nào đủ cho ngày ấy." (Ma-thi-ơ 6:34)
+- "Ta để sự bình an lại cho các ngươi; ta ban sự bình an ta cho các ngươi; ta cho các ngươi sự bình an chẳng phải như thế gian cho. Lòng các ngươi chớ bối rối và đừng sợ hãi." (Giăng 14:27)
+- "Vả, chúng ta biết rằng mọi sự hiệp lại làm ích cho kẻ yêu mến Đức Chúa Trời, tức là cho kẻ được gọi theo ý muốn Ngài đã định." (Rô-ma 8:28)
 ```
 
 </details>
@@ -2727,7 +2839,7 @@ Không chèn số liệu khô khan, không lên lớp.
 
 ```
 VIỆC CẦN LÀM: viết một lời khích lệ gửi qua Telegram.
-Chọn MỘT châm ngôn / câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa (ví dụ Khổng Tử, Mạnh Tử, Lão Tử, Seneca, Marcus Aurelius, Edison) về kiên trì, không bỏ cuộc, tập trung. Ghi đúng tác giả; câu nước ngoài thì dịch sang tiếng Việt tự nhiên. Không chắc tác giả thì chọn câu khác. KHÔNG dùng Kinh Thánh.
+Chọn MỘT câu trong phần "Danh ngôn" của DANH SÁCH CÂU TRÍCH bên dưới, hợp tình huống (kiên trì, không bỏ cuộc, tập trung). KHÔNG dùng Kinh Thánh.
 Lời khích lệ LUÔN tích cực, ấm áp, đầy hy vọng: không chê trách, không nhắc thất bại, không so sánh tiêu cực, không doạ nạt (kể cả giọng sếp khó tính: nghiêm nhưng vẫn khích lệ).
 
 Tình huống lúc này: buổi chiều, đang giữ nhịp tốt; đã tập trung sâu 2h 10m / mục tiêu 4h, ngoài VDI 12m, bây giờ là 14:30
@@ -2736,6 +2848,24 @@ Trả lời đúng 2 dòng: dòng 1 là câu trích (kèm nguồn), dòng 2 là 
 
 Đừng lặp lại các câu đã gửi hôm nay và hôm qua (nguyên văn):
 - "Đường tuy ngắn, không đi không bao giờ đến; việc tuy nhỏ, không làm chẳng bao giờ nên." — Tuân Tử
+
+DANH SÁCH CÂU TRÍCH ĐƯỢC DÙNG (app đã đối chiếu nguyên văn): cần câu trích thì CHỈ chọn MỘT câu trong danh sách này, chép đúng từng chữ và ghi đúng nguồn như bên dưới, đặt trong ngoặc kép. Không sửa chữ, không ghép câu, không dùng câu nào ngoài danh sách.
+Danh ngôn:
+- "Thất bại là mẹ thành công." — Tục ngữ
+- "Hành trình vạn dặm bắt đầu từ một bước chân." — Lão Tử
+- "Không có việc gì khó, chỉ sợ lòng không bền. Đào núi và lấp biển, quyết chí ắt làm nên." — Hồ Chí Minh
+- "Có công mài sắt, có ngày nên kim." — Tục ngữ
+- "Ngã bảy lần, đứng dậy tám lần." — Ngạn ngữ Nhật Bản
+- "Chúng ta là những gì chúng ta làm lặp đi lặp lại. Xuất sắc không phải là một hành động, mà là một thói quen." — Will Durant
+- "Kỷ luật là cầu nối giữa mục tiêu và thành tựu." — Jim Rohn
+- "Việc khó nhất là quyết định hành động, phần còn lại chỉ là sự kiên trì." — Amelia Earhart
+- "Tôi không thất bại. Tôi chỉ tìm ra 10.000 cách không hiệu quả." — Thomas Edison
+- "Ví như đắp núi, chỉ còn thiếu một sọt đất mà dừng, ấy là tự ta dừng." — Khổng Tử, Luận Ngữ 9.19
+- "Trời sắp giao trọng trách cho người nào, ắt trước hết làm khổ tâm chí, nhọc gân cốt người ấy." — Mạnh Tử, Cáo Tử hạ
+- "Không phải vì việc khó mà ta không dám làm; chính vì ta không dám làm nên việc mới khó." — Seneca, Thư gửi Lucilius 104
+- "Cái cản đường hành động lại thúc đẩy hành động. Chướng ngại trên đường trở thành con đường." — Marcus Aurelius, Suy Tưởng 5.20
+- "Làm tốt hơn nói hay." — Benjamin Franklin
+- "Cách duy nhất để làm được việc tuyệt vời là yêu điều bạn làm." — Steve Jobs, Stanford 2005
 ```
 
 </details>
@@ -2959,7 +3089,7 @@ Không bắt buộc. Chỉ cần ghi dòng muốn đổi; dòng không có dùng
 | `review_prompt_at` | `"16:45"` | Hỏi tổng kết cuối ngày |
 | `daily_summary_at` | `"17:00"` | Tổng kết ngày + AI đánh giá |
 | `afternoon_boost_at` | `"14:30"` | Câu khích lệ buổi chiều (`""` = tắt) |
-| `weekly_report_day`, `weekly_report_at` | `"fri"`, `"16:50"` | Ngày (`mon`…`sun`) và giờ tổng kết tuần |
+| `weekly_report_day`, `weekly_report_at` | `"fri"`, `"17:05"` | Ngày (`mon`…`sun`) và giờ tổng kết tuần (nên sau `daily_summary_at`) |
 | `daily_focus_goal_hours` | `4` | Mục tiêu giờ tập trung sâu mỗi ngày (> 0) |
 | `run_on_off_days` | `false` | `true` = vẫn chạy và ghi số liệu cuối tuần / lễ / ngày nghỉ (không nhắc) |
 | `extra_off_days` | `[]` | Ngày nghỉ thêm, ví dụ `["2026-12-24"]` |
@@ -3215,7 +3345,7 @@ VÒNG LẶP mỗi 5 giây:
   |     app đang ở trước, số giây không chạm phím/chuột, máy có khoá không
   |  2. Có cảnh báo tức thời (ngoài VDI, rời máy, VDI đã đóng, nhắc nghỉ...)? --> đưa vào hàng đợi gửi
   |  3. Mỗi 30 giây: tới giờ việc nào chưa (chào sáng, mốc tiến độ, hỏi tổng kết,
-  |     tổng kết ngày 17:00, tổng kết tuần thứ Sáu 16:50)? --> làm việc đó (mỗi việc 1 lần/ngày)
+  |     tổng kết ngày 17:00, tổng kết tuần thứ Sáu 17:05)? --> làm việc đó (mỗi việc 1 lần/ngày)
   |  4. Mỗi 12 mẫu (1 phút): ghi số liệu vào DB
   |  5. Hai lần đo cách nhau > 120 giây? --> máy vừa ngủ dậy: audit WAKE, xoá đồng hồ cảnh báo
   |  6. Kiểm tra giờ:
@@ -3262,7 +3392,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.5.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.6.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

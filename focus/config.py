@@ -112,7 +112,7 @@ DEFAULTS = {
     # Một câu khích lệ buổi chiều ("" = tắt).
     "afternoon_boost_at": "14:30",
     "weekly_report_day": "fri",
-    "weekly_report_at": "16:50",
+    "weekly_report_at": "17:05",  # sau tổng kết ngày 17:00, để tổng kết tuần có đủ số liệu và lời đánh giá thứ Sáu
     # Làm mới file báo cáo HTML mỗi N phút (0 = chỉ tạo khi cần: /report, tổng kết, bao_cao_hom_nay.bat).
     "report_refresh_minutes": 0,
     # Lịch lễ Singapore có sẵn trong code. Nếu máy có app khác đã tải lịch lễ (file sg_holidays_<năm>.json)

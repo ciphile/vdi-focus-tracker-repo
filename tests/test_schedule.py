@@ -45,9 +45,9 @@ class ScheduleTest(unittest.TestCase):
     def test_summary_weekly_boost(self):
         self.assertIn("summary", self.jobs("17:00", active=False))
         self.assertNotIn("summary", self.jobs("16:59"))
-        self.assertIn("weekly", self.jobs("16:50", weekday=4))
-        self.assertNotIn("weekly", self.jobs("16:49", weekday=4))
-        self.assertNotIn("weekly", self.jobs("16:50", weekday=3))
+        self.assertIn("weekly", self.jobs("17:05", weekday=4))
+        self.assertNotIn("weekly", self.jobs("17:04", weekday=4), "tổng kết tuần sau tổng kết ngày 17:00")
+        self.assertNotIn("weekly", self.jobs("17:05", weekday=3))
         self.assertIn("boost", self.jobs("14:30"))
         self.assertNotIn("boost", self.jobs("17:30"))
         self.assertEqual(self.jobs("14:30", has_bot=False), [])

@@ -252,7 +252,8 @@ def week_text(facts):
              + (f" · làm ngoài giờ {facts['overtime_hours']:g}h" if facts.get("overtime_hours") else ""),
              f"Chuỗi hiện tại: {facts['streak_days']} ngày",
              *([f"Làm bù ngày nghỉ: {'; '.join(facts['off_day_overtime'])}"] if facts.get("off_day_overtime") else []),
-             f"Ngày tốt nhất: {facts['best_day']} · kém nhất: {facts['worst_day']}",
+             (f"Ngày tốt / kém nhất: {facts['best_day']}" if facts.get("days_tied") else
+              f"Ngày tốt nhất: {facts['best_day']} · kém nhất: {facts['worst_day']}"),
              f"Giờ vàng: {', '.join(facts['golden_hours'])}",
              "", "Từng ngày:"] + [f"  {x}" for x in facts["per_day"]]
     return "\n".join(lines)

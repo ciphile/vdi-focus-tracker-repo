@@ -18,45 +18,7 @@ from .logs import get_logger
 
 log = get_logger()
 
-QUOTES = [
-    ("Đường tuy ngắn, không đi không bao giờ đến; việc tuy nhỏ, không làm chẳng bao giờ nên.", "Tuân Tử"),
-    ("Thất bại là mẹ thành công.", "Tục ngữ"),
-    ("Hành trình vạn dặm bắt đầu từ một bước chân.", "Lão Tử"),
-    ("Không có việc gì khó, chỉ sợ lòng không bền. Đào núi và lấp biển, quyết chí ắt làm nên.", "Hồ Chí Minh"),
-    ("Có công mài sắt, có ngày nên kim.", "Tục ngữ"),
-    ("Ngã bảy lần, đứng dậy tám lần.", "Ngạn ngữ Nhật Bản"),
-    ("Chúng ta là những gì chúng ta làm lặp đi lặp lại. Xuất sắc không phải là một hành động, mà là một thói quen.",
-     "Will Durant"),
-    ("Kỷ luật là cầu nối giữa mục tiêu và thành tựu.", "Jim Rohn"),
-    ("Việc khó nhất là quyết định hành động, phần còn lại chỉ là sự kiên trì.", "Amelia Earhart"),
-    ("Tôi không thất bại. Tôi chỉ tìm ra 10.000 cách không hiệu quả.", "Thomas Edison"),
-    ("Ví như đắp núi, chỉ còn thiếu một sọt đất mà dừng, ấy là tự ta dừng.", "Khổng Tử, Luận Ngữ 9.19"),
-    ("Trời sắp giao trọng trách cho người nào, ắt trước hết làm khổ tâm chí, nhọc gân cốt người ấy.",
-     "Mạnh Tử, Cáo Tử hạ"),
-    ("Không phải vì việc khó mà ta không dám làm; chính vì ta không dám làm nên việc mới khó.",
-     "Seneca, Thư gửi Lucilius 104"),
-    ("Cái cản đường hành động lại thúc đẩy hành động. Chướng ngại trên đường trở thành con đường.",
-     "Marcus Aurelius, Suy Tưởng 5.20"),
-    ("Làm tốt hơn nói hay.", "Benjamin Franklin"),
-    ("Cách duy nhất để làm được việc tuyệt vời là yêu điều bạn làm.", "Steve Jobs, Stanford 2005"),
-]
-
-# Bản dịch Kinh Thánh Truyền Thống (1926).
-BIBLE = [
-    ("Tôi làm được mọi sự nhờ Đấng ban thêm sức cho tôi.", "Phi-líp 4:13"),
-    ("Chớ mệt nhọc về sự làm lành, vì nếu chúng ta không trễ nải, thì đến kỳ chúng ta sẽ gặt.", "Ga-la-ti 6:9"),
-    ("Nhưng ai trông đợi Đức Giê-hô-va thì chắc được sức mới, cất cánh bay cao như chim ưng; "
-     "chạy mà không mệt nhọc, đi mà không mòn mỏi.", "Ê-sai 40:31"),
-    ("Hãy vững lòng bền chí, chớ run sợ, chớ kinh khủng; vì Giê-hô-va Đức Chúa Trời ngươi "
-     "vẫn ở cùng ngươi trong mọi nơi ngươi đi.", "Giô-suê 1:9"),
-    ("Hễ làm việc gì, hãy hết lòng mà làm, như làm cho Chúa, chớ không phải làm cho người ta.", "Cô-lô-se 3:23"),
-    ("Hỡi những kẻ mệt mỏi và gánh nặng, hãy đến cùng ta, ta sẽ cho các ngươi được yên nghỉ.", "Ma-thi-ơ 11:28"),
-    ("Hãy phó các việc mình cho Đức Giê-hô-va, thì những mưu ý mình sẽ được thành công.", "Châm-ngôn 16:3"),
-    ("Đừng sợ, vì ta ở với ngươi; chớ kinh khiếp, vì ta là Đức Chúa Trời ngươi! Ta sẽ bổ sức cho ngươi.",
-     "Ê-sai 41:10"),
-    ("Ân điển ta đủ cho ngươi rồi, vì sức mạnh của ta nên trọn vẹn trong sự yếu đuối.", "II Cô-rinh-tô 12:9"),
-    ("Kìa, con cái là cơ nghiệp bởi Đức Giê-hô-va mà ra; bông trái của tử cung là phần thưởng.", "Thi-thiên 127:3"),
-]
+from .quotes import BIBLE, QUOTES, menu as quote_menu  # câu trích đã kiểm nguyên văn (xem quotes.py)
 
 FAMILY = [
     "Mỗi giờ tập trung hôm nay là thêm một viên gạch cho tổ ấm. Gia đình đang chờ bạn về với một ngày làm việc trọn vẹn.",
@@ -77,22 +39,17 @@ EXERCISES = [
 ]
 
 STYLE_PROMPTS = {
-    "motivation": "Chọn MỘT châm ngôn / câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa "
-                  "(ví dụ Khổng Tử, Mạnh Tử, Lão Tử, Seneca, Marcus Aurelius, Edison) về kiên trì, không bỏ cuộc, "
-                  "tập trung. Ghi đúng tác giả; câu nước ngoài thì dịch sang tiếng Việt tự nhiên. Không chắc tác giả "
-                  "thì chọn câu khác. KHÔNG dùng Kinh Thánh.",
-    "bible": "Chọn MỘT câu Kinh Thánh của Tin Lành (Cơ Đốc giáo Tin Lành) về đừng bỏ cuộc, đừng nản lòng, sức mới, "
-             "phó thác, bình an, hoặc làm việc hết lòng. Chỉ dùng 66 sách Kinh Thánh Tin Lành, KHÔNG dùng các sách "
-             "Thứ Kinh/Đệ Nhị Kinh (Tô-bi-a, Giu-đi-tha, Khôn Ngoan, Huấn Ca, Ma-ca-bê, Ba-rúc) và không dùng tên "
-             "sách theo bản Công giáo. Trích nguyên văn theo bản dịch Truyền Thống 1926 (bản Hội Thánh Tin Lành Việt "
-             "Nam dùng), ghi đúng sách chương câu (ví dụ Ga-la-ti 6:9). Không chắc chữ chính xác thì chọn câu quen "
-             "thuộc khác.",
+    "motivation": "Chọn MỘT câu trong phần \"Danh ngôn\" của DANH SÁCH CÂU TRÍCH bên dưới, hợp tình huống (kiên trì, "
+                  "không bỏ cuộc, tập trung). KHÔNG dùng Kinh Thánh.",
+    "bible": "Chọn MỘT câu Kinh Thánh (Tin Lành, bản Truyền Thống 1926) trong DANH SÁCH CÂU TRÍCH bên dưới, hợp tình "
+             "huống (đừng bỏ cuộc, sức mới, phó thác, bình an, làm việc hết lòng). Chỉ 66 sách Kinh Thánh Tin Lành, "
+             "KHÔNG dùng các sách Thứ Kinh/Đệ Nhị Kinh và tên sách theo bản Công giáo.",
     "family": "Viết MỘT lời khích lệ ngắn về cố gắng vì gia đình, vì con cái, vì cuộc sống. "
-              "Có thể kèm một châm ngôn có thật của người thành đạt hoặc danh nhân xưa nếu hợp, ghi rõ nguồn. "
+              "Có thể kèm một câu trong phần \"Danh ngôn\" của DANH SÁCH CÂU TRÍCH bên dưới nếu hợp. "
               "KHÔNG dùng Kinh Thánh.",
 }
 FAMILY_BIBLE = ("Viết MỘT lời khích lệ ngắn về cố gắng vì gia đình, vì con cái, vì cuộc sống. "
-                "Có thể kèm một câu nói nổi tiếng có thật hoặc câu Kinh Thánh nếu hợp, ghi rõ nguồn.")
+                "Có thể kèm một câu trong DANH SÁCH CÂU TRÍCH bên dưới: danh ngôn, hoặc câu Kinh Thánh nếu hợp.")
 
 
 def style_prompt(cfg, style):
@@ -100,6 +57,18 @@ def style_prompt(cfg, style):
     if style == "family" and ai_context.bible_on(cfg):
         return FAMILY_BIBLE
     return STYLE_PROMPTS[style]
+
+
+def menu_for(cfg, style=None, recent=None):
+    """DANH SÁCH CÂU TRÍCH gửi kèm prompt: AI chỉ được chọn câu trong đây (xem quotes.py).
+    style "bible": chỉ Kinh Thánh; "motivation": chỉ danh ngôn; còn lại (family, đánh giá ngày/tuần): danh ngôn,
+    thêm Kinh Thánh nếu đang bật."""
+    on = ai_context.bible_on(cfg)
+    if style == "bible":
+        return quote_menu(bible=True, sages=False, recent=recent)
+    if style == "motivation":
+        return quote_menu(bible=False, sages=True, recent=recent)
+    return quote_menu(bible=on, sages=True, recent=recent)
 
 POSITIVE = ("Lời khích lệ LUÔN tích cực, ấm áp, đầy hy vọng: không chê trách, không nhắc thất bại, "
             "không so sánh tiêu cực, không doạ nạt (kể cả giọng sếp khó tính: nghiêm nhưng vẫn khích lệ).")
@@ -196,7 +165,7 @@ def encouragement(cfg, db, situation, style=None):
                   f"Tình huống lúc này: {situation}\n\n"
                   "Trả lời đúng 2 dòng: dòng 1 là câu trích (kèm nguồn), dòng 2 là một câu ngắn gắn với "
                   "tình huống, gợi ý một bước nhỏ làm ngay.")
-        prompt += _avoid_block(recent)
+        prompt += _avoid_block(recent) + "\n\n" + menu_for(cfg, style, recent)
         try:
             text, _ = ai_client.generate(cfg, prompt, system_prompt(cfg), purpose=f"encourage:{style}")
         except ai_client.AIError:
@@ -218,7 +187,7 @@ THÔNG TIN (JSON, app đã tách sẵn theo ngày):
 
 Viết 3–5 dòng, văn bản thường:
 1. Một câu chào buổi sáng ngắn, đúng giọng văn và cách xưng hô.
-2. Câu trích (nguyên văn, kèm nguồn) trên một dòng riêng.
+2. Câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (chép nguyên văn, kèm nguồn) trên một dòng riêng.
 3. Một câu nối ý câu trích với hôm nay: nếu today có first_task thì khích lệ bắt đầu ngay bằng việc đó; nếu có
    previous_workday thì chỉ nhắc điểm tốt của ngày đó (không nhắc điểm yếu).
 4. Nếu today có pending_from_previous_workday (việc trong kế hoạch và issue các ngày trước chưa thấy ghi xong, cộng
@@ -248,7 +217,7 @@ def morning_message(cfg, db, info, style=None):
         data = morning_payload(info)
         prompt = MORNING_TASK.format(style=style_prompt(cfg, style), positive=POSITIVE, today=data["today"].get("date", ""),
                                      info=json.dumps(data, ensure_ascii=False, indent=1))
-        prompt += _avoid_block(recent)
+        prompt += _avoid_block(recent) + "\n\n" + menu_for(cfg, style, recent)
         try:
             text, _ = ai_client.generate(cfg, prompt, system_prompt(cfg), purpose=f"morning:{style}")
         except ai_client.AIError as e:
@@ -345,7 +314,8 @@ CẤU TRÚC SỐ LIỆU (app đã tính sẵn và tách theo ngày, không cần
 
 {score_guide}
 
-Viết tối đa 19 dòng, đúng thứ tự 7 mục sau (mỗi mục mở đầu bằng emoji và tên mục ngắn do bạn tự đặt, không markdown):
+Viết tối đa 19 dòng, đúng thứ tự 7 mục sau. Mỗi mục là một đoạn riêng, bắt đầu ở dòng mới, mở đầu bằng một emoji
+và tên mục ngắn do bạn tự đặt (không markdown); không gộp hai mục vào một đoạn, không bỏ mục nào:
 1. Điểm tổng hôm nay (BẮT BUỘC, 3–5 dòng, viết cho người chưa từng nghe tới điểm tổng):
    - Câu đầu: điểm tổng hôm nay là today.total_score/100 (today.total_score_10/10), nghĩa là mức gì (lấy từ
      today.total_score_explained.meaning), kèm robot quà today.gift_robot cho vui.
@@ -372,10 +342,10 @@ Viết tối đa 19 dòng, đúng thứ tự 7 mục sau (mỗi mục mở đầ
    cần khắc phục chung chung.
 5. Ngày mai cải thiện: 1–2 hành động rất cụ thể, làm được, có giờ giấc (ví dụ chặn khung giờ vàng, tắt app nào, để điện thoại ở đâu).
    Nếu today có "science_advice" (điểm tổng dưới 50): thêm đúng một câu dựa trên dữ kiện đó (giữ tên tác giả, năm,
-   con số như đã cho), nối với lý do làm việc vì gia đình. Không có trường này thì KHÔNG tự nêu nghiên cứu nào.
+   con số như đã cho), nối với lý do làm việc vì gia đình, nói bằng cách xưng hô đã dặn (không chép nguyên chữ
+   "bạn" nếu xưng hô khác). Không có trường này thì KHÔNG tự nêu nghiên cứu nào.
 6. Một câu khích lệ ngắn hợp giọng văn{quote_hint}. Câu phải nâng đỡ, tích cực, cho thêm sức (kể cả khi ngày kém):
-   không chọn câu răn đe, chê trách (ví dụ câu về sự biếng nhác). Câu trích phải đúng nguyên văn; không chắc nguyên
-   văn thì chọn câu khác.
+   chọn câu hợp với ngày hôm nay, không chọn câu nghe như răn đe, chê trách.
 7. Dòng cuối: {wish}
 Không chép lại toàn bộ số liệu (riêng điểm tổng ở mục 1 thì phải giải thích đủ). Thiếu số liệu ở mục nào thì nói
 ngắn gọn rồi bỏ qua, không bịa."""
@@ -404,7 +374,8 @@ Cách đọc trước khi viết (không cần viết ra các bước này):
 
 {score_guide}
 
-Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự (mỗi mục mở đầu bằng emoji và tên mục ngắn do bạn tự đặt, không markdown):
+Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự dưới đây. Mỗi mục là một đoạn riêng, bắt đầu ở dòng mới, mở đầu
+bằng một emoji và tên mục ngắn do bạn tự đặt (không markdown); không gộp hai mục vào một đoạn:
 1. Điểm tổng của tuần (BẮT BUỘC, 3–5 dòng, viết cho người chưa từng nghe tới điểm tổng): điểm tổng trung bình
    week_summary.avg_total_score/100 nghĩa là mức gì (total_score_explained.meaning); điểm tổng gộp từ những thành phần
    nào và trung bình mỗi phần bao nhiêu (avg_parts); ngày điểm cao nhất, thấp nhất và vì sao, dựa trên thành phần của
@@ -412,12 +383,17 @@ Viết tin nhắn Telegram tối đa 24 dòng, theo thứ tự (mỗi mục mở
    điểm. So với tuần trước nếu có.
 2. Đánh giá chung: tuần tốt/ổn/chưa tốt, số ngày đạt mục tiêu, giờ tập trung sâu, xu hướng trong tuần.
 3. Ngày tốt nhất và kém nhất: nguyên nhân dựa trên số liệu và ghi chú của chính ngày đó (gộp với mục 1 nếu đã nói).
+   Nếu best_day / worst_day ghi "bằng nhau" hoặc chỉ có 1 ngày thì nói vậy, không gọi ngày nào là tốt nhất / kém nhất.
 4. Việc đã xong và việc còn pending sang tuần sau: dựa trên plan/output/tomorrow/issue, nêu tên việc cụ thể.
-5. Issue lặp lại: mỗi nhóm 1 dòng kèm số lần và một bước khắc phục cụ thể sát bối cảnh công việc.
-6. Mất tập trung: quy luật chính của tuần và cách giảm.
+5. Issue lặp lại: CHỈ lấy issue người dùng tự ghi (trường "issues" của từng ngày trong "days"). Mỗi nhóm 1 dòng kèm
+   số lần và một bước khắc phục cụ thể sát bối cảnh công việc. Không có issue nào thì viết đúng một dòng ngắn "tuần
+   này chưa ghi issue nào" và nhắc /issue; KHÔNG lấy số liệu sao nhãng hay thời gian ngoài VDI làm issue, không tự
+   nghĩ ra issue.
+6. Mất tập trung: quy luật chính của tuần và cách giảm. App ngoài VDI có thể là việc liên quan công việc (ghi chú,
+   tra cứu, công cụ AI, chat với đồng nghiệp): nói là "thời gian ngoài VDI", không khẳng định người dùng đang chơi,
+   không dùng từ "nghiện" hay "bỏ bê".
 7. Mục tiêu tuần sau: 1–2 mục tiêu nhỏ, đo được, có ngày giờ cụ thể (ví dụ giữ giờ vàng cho việc gì).
-8. Một câu khích lệ ngắn hợp giọng văn{quote_hint}: nâng đỡ, tích cực, không răn đe chê trách; câu trích đúng
-   nguyên văn.
+8. Một câu khích lệ ngắn hợp giọng văn{quote_hint}: nâng đỡ, tích cực, không răn đe chê trách.
 9. Dòng cuối: {wish}
 Chỉ dùng số liệu và ghi chú được cung cấp; thiếu thì nói ngắn rồi bỏ qua, không bịa."""
 
@@ -500,9 +476,15 @@ def local_wish(day, weekend=None):
 
 def _quote_hint(cfg):
     if ai_context.bible_on(cfg):
-        return " (có thể là câu Kinh Thánh Tin Lành bản Truyền Thống 1926 hoặc câu nói nổi tiếng có thật, ghi nguồn)"
-    return (" (là châm ngôn / câu nói có thật của người thành đạt hoặc danh nhân, nhà hiền triết thời xưa, ghi đúng "
-            "tác giả; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh)")
+        return (", kèm MỘT câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (câu Kinh Thánh hoặc danh ngôn), chép "
+                "nguyên văn và nguồn")
+    return (", kèm MỘT câu trích chọn trong DANH SÁCH CÂU TRÍCH bên dưới (chỉ có châm ngôn, câu nói của người thành đạt, "
+            "danh nhân; người dùng đã TẮT Kinh Thánh nên KHÔNG dùng Kinh Thánh), chép nguyên văn và tác giả")
+
+
+def _with_menu(cfg, db, task):
+    """Gắn DANH SÁCH CÂU TRÍCH ngay sau việc cần làm của bài đánh giá (bỏ các câu đã gửi hôm nay, hôm qua)."""
+    return task + "\n\n" + menu_for(cfg, recent=_db_recent(db))
 
 
 def ai_review_on(cfg):
@@ -570,7 +552,8 @@ def review_day(cfg, db, facts):
                              wish=evening_wish_hint(facts["day"]),
                              quote_hint=_quote_hint(cfg), score_guide=scoring.score_guide())
     try:
-        text, _ = ai_client.generate(cfg, _review_prompt(task, payload), system_prompt(cfg), purpose="daily_review")
+        text, _ = ai_client.generate(cfg, _review_prompt(_with_menu(cfg, db, task), payload), system_prompt(cfg),
+                                     purpose="daily_review")
     except ai_client.AIError as e:
         log.warning("AI đánh giá ngày lỗi: %s", e)
         return None, ReviewError.of(str(e), getattr(e, "permanent", False))
@@ -597,7 +580,8 @@ def review_week(cfg, db, facts):
                               quote_hint=_quote_hint(cfg), wish=evening_wish_hint(facts.get("to") or facts["from"]),
                               score_guide=scoring.score_guide())
     try:
-        text, _ = ai_client.generate(cfg, _review_prompt(task, full), system_prompt(cfg), purpose="weekly_review")
+        text, _ = ai_client.generate(cfg, _review_prompt(_with_menu(cfg, db, task), full), system_prompt(cfg),
+                                     purpose="weekly_review")
     except ai_client.AIError as e:
         log.warning("AI tổng kết tuần lỗi: %s", e)
         return None, ReviewError.of(str(e), getattr(e, "permanent", False))

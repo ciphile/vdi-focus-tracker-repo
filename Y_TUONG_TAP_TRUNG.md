@@ -63,7 +63,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Xem lại một ngày đã qua | `/today hôm qua`, `/today 14/10`, `/report hôm qua` | Số liệu, điểm, kế hoạch, năng lượng, output, issue của ngày đó |
 | Giờ vào/ra AS400 | `/as400 08:10 17:35` hoặc gửi ảnh spooled file | AI chỉ đọc giờ sớm nhất và muộn nhất, hỏi lại trước khi lưu |
 | Tổng kết ngày + AI đánh giá | Tự động 17:00 | Việc pending, vì sao mất tập trung, cần khắc phục gì |
-| Tổng kết tuần + AI phân tích | Tự động thứ Sáu 16:50, `/week` | Giờ vàng, ngày tốt/kém nhất, issue lặp lại, kèm file báo cáo tuần HTML |
+| Tổng kết tuần + AI phân tích | Tự động thứ Sáu 17:05 (sau tổng kết ngày), `/week` | Giờ vàng, ngày tốt/kém nhất, issue lặp lại, kèm file báo cáo tuần HTML |
 | Báo cáo HTML ngày và tuần | `/report`, `bao_cao_hom_nay.bat`, `/week` | Bảng màu Pop Art cổ điển, mỗi loại thời gian một màu cố định; điểm tổng to + robot quà tặng + thang 5 robot; 6 ô màu (ghi «TB mỗi lần») và thẻ lớn cho các chỉ số phụ (OT = 0 thì ẩn); dòng thời gian có chú thích đủ màu; biểu đồ theo giờ; khối tập trung; OT 14 ngày; ghi chú; lời AI. Mở được trên điện thoại |
 | Gửi bù | Tự động | Máy tắt trước 17:00 thì sáng mai gửi bù tổng kết |
 

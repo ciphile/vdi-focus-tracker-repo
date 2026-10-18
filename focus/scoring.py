@@ -202,13 +202,19 @@ def explain_week(days):
     best_d = max(rows, key=lambda d: d["total_score"])
     worst_d = min(rows, key=lambda d: d["total_score"])
     label = lambda d: f"{d.get('weekday', '')} {d['day'][8:]}/{d['day'][5:7]}".strip()
+    if best_d["total_score"] == worst_d["total_score"]:  # hoà / chỉ 1 ngày: không gọi một ngày vừa cao vừa thấp nhất
+        best_txt = worst_txt = (f"chỉ có 1 ngày: {label(best_d)} ({best_d['total_score']})" if len(rows) == 1 else
+                                f"các ngày bằng nhau ({best_d['total_score']})")
+    else:
+        best_txt = f"{label(best_d)} ({best_d['total_score']})"
+        worst_txt = f"{label(worst_d)} ({worst_d['total_score']})"
     return {
         "meaning": f"Điểm tổng trung bình tuần {avg}/100 = mức {tier_of(avg)['verdict']}. Thang: {scale_text()}",
         "avg_parts": avg_parts,
         "by_day": [f"{label(d)}: {d['total_score']} ({', '.join(f'{PART_NAMES[k]} {v}' for k, v in d['total_score_parts'].items())})"
                    for d in rows],
-        "best_day": f"{label(best_d)} ({best_d['total_score']})",
-        "worst_day": f"{label(worst_d)} ({worst_d['total_score']})",
+        "best_day": best_txt,
+        "worst_day": worst_txt,
         "biggest_loss": f"{PART_NAMES[worst]} làm mất nhiều điểm nhất, trung bình {_n(lost[worst])} điểm tổng mỗi ngày",
     }
 
@@ -260,8 +266,9 @@ SCIENCE = {
                        "ngồi liền.",
 }
 
-FAMILY_WHY = ("Bạn đang làm vì gia đình và các con: mỗi khối tập trung trọn vẹn là xong việc sớm hơn, tối về có "
-              "thêm thời gian thật sự cho nhà.")
+# Viết trung tính, không xưng hô: AI nói lại bằng cách xưng hô trong persona (báo cáo HTML thì in nguyên câu này).
+FAMILY_WHY = ("Lý do đáng giữ: mỗi khối tập trung trọn vẹn là xong việc sớm hơn, tối về có thêm thời gian thật sự "
+              "cho gia đình.")
 
 
 def advice_key(a, sc):

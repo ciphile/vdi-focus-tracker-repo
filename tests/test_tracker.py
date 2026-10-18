@@ -80,8 +80,8 @@ EXPECTED_DAY = [
     ("15:30:00", "pace_1530"),
     ("16:36:00", "break"),
     ("16:45:00", "review"),
-    ("16:50:00", "weekly"),
     ("17:00:00", "summary"),
+    ("17:05:00", "weekly"),  # sau tổng kết ngày: tuần có đủ số liệu và lời đánh giá thứ Sáu
 ]
 
 
@@ -290,7 +290,7 @@ class FullDayTest(_Base):
         self.assertEqual(sorted(jobs), sorted(["plan", "review", "summary", "weekly", "boost"]))
         self.assertEqual(self.nt.errors, [])
         self.assertEqual(self.bot.calls, [("morning", FRIDAY), ("start_convo", "plan"), ("boost", FRIDAY), ("start_convo", "review"),
-                                          ("weekly", FRIDAY), ("summary", FRIDAY)])
+                                          ("summary", FRIDAY), ("weekly", FRIDAY)])
         for job in ("PLAN", "REVIEW", "SUMMARY", "WEEKLY", "BOOST"):
             self.assertEqual(self.audit_text().count("JOB_" + job), 1, job)
 

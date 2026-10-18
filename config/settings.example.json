@@ -37,7 +37,7 @@
   "daily_summary_at": "17:00",
   "afternoon_boost_at": "14:30",
   "weekly_report_day": "fri",
-  "weekly_report_at": "16:50",
+  "weekly_report_at": "17:05",
   "ai_review_enabled": true,
   "work_context": "Lập trình viên/BA hệ thống lõi bảo hiểm nhân thọ Life Asia (LifeAsia, CSC/DXC) chạy trên IBM i (AS400), viết bằng COBOL (ILE COBOL), CL, DB2 for i; việc hằng ngày gồm sửa và test chương trình, batch job, spooled file, đối soát dữ liệu hợp đồng, xử lý yêu cầu nghiệp vụ (phát hành, thu phí, bồi thường, đáo hạn); làm việc qua máy ảo VDI Citrix.",
   "encouragement_enabled": true,

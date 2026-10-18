@@ -644,7 +644,7 @@ def notes_section(cfg, note, extra):
     if ds:
         dist += ("<br><br>" if dist else "") + "<small class='mut'>" + esc(
             f"{ds['days']} ngày làm việc gần nhất: trung bình sao nhãng {fmt_dur(ds['avg_other'])}/ngày (ngoài VDI + "
-            f"thu nhỏ VDI, trong giờ làm), thu nhỏ VDI {ds['avg_minimize_count']:.1f} lần/ngày"
+            f"thu nhỏ VDI, trong giờ làm), thu nhỏ VDI {round(ds['avg_minimize_count'], 1):g} lần/ngày"
             + (f"; hay sao nhãng nhất lúc {', '.join(ds['top_hours'])}" if ds["top_hours"] else "")
             + (f". Bạn đã tự ghi {ds['noted']} lần" + (f", thường lúc {', '.join(ds['noted_hours'])}"
                                                       if ds["noted_hours"] else "")
@@ -704,7 +704,9 @@ def render_week(cfg, wk):
         why = ""
         if ew:
             why = (f"<div class='why'>📉 <b>Kéo điểm xuống nhiều nhất:</b> {esc(ew['biggest_loss'])}.<br>"
-                   f"🏆 Ngày điểm cao nhất: <b>{esc(ew['best_day'])}</b> · thấp nhất: <b>{esc(ew['worst_day'])}</b></div>")
+                   + (f"🏆 Ngày điểm cao / thấp nhất: <b>{esc(ew['best_day'])}</b></div>"
+                      if ew["best_day"] == ew["worst_day"] else
+                      f"🏆 Ngày điểm cao nhất: <b>{esc(ew['best_day'])}</b> · thấp nhất: <b>{esc(ew['worst_day'])}</b></div>"))
         p.append("<section class='card score'>"
                  f"<div class='sticker'>{burst('#DFAB36', 12, 78, 0.7, tier['grade'])}</div>"
                  f"<div class='robot'><div class='halo'></div>{robots.robot_svg(tier['level'], 170)}</div>"
@@ -763,9 +765,11 @@ def render_week(cfg, wk):
     chips = []
     if facts.get("golden_hours"):
         chips.append(chip("⏰", "Giờ vàng: " + ", ".join(facts["golden_hours"])))
-    if facts.get("best_day"):
-        chips.append(chip("▲", f"Tập trung nhiều nhất: {facts['best_day']}"))
-        chips.append(chip("▼", f"Ít nhất: {facts['worst_day']}"))
+    if facts.get("best_day") and facts.get("days_tied"):
+        chips.append(chip("=", f"Ngày tốt / kém nhất: {facts['best_day']}"))
+    elif facts.get("best_day"):
+        chips.append(chip("▲", f"Ngày tốt nhất: {facts['best_day']}"))
+        chips.append(chip("▼", f"Kém nhất: {facts['worst_day']}"))
     if chips:
         p.append("<div class='chips'>" + "".join(chips) + "</div>")
 
