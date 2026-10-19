@@ -12,7 +12,7 @@ import math
 
 from . import energy, robots, scoring
 from .analysis import day_bounds, fmt_dur, fmt_t, focus_score, hour_end, ot_ranges
-from .report import avg_dur, esc, insights, leave_line
+from .report import avg_dur, breakdown_parts, esc, insights, leave_line
 
 WEEKDAY_FULL = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"]
 WEEKDAY_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
@@ -60,6 +60,7 @@ background-image:radial-gradient(var(--line) 1.4px,transparent 1.7px);background
 padding:5px 11px;transform:rotate(-1.5deg);box-shadow:3px 3px 0 var(--away)}
 .sub{font-size:17px}.sub b{font-weight:700}
 .banner{margin-top:16px;padding:12px 16px;border:var(--b);border-radius:12px;box-shadow:var(--sh);font-weight:600}
+.banner.sum{background:var(--paper)}.banner.sum .mut{display:block;margin-top:4px;font-size:13px;font-weight:400}
 .banner.leave{background:var(--min)}.banner.off{background:var(--ot);}
 .banner.off span{background:var(--paper);padding:2px 8px;border-radius:6px;box-decoration-break:clone;
 -webkit-box-decoration-break:clone;line-height:1.9}
@@ -506,6 +507,10 @@ def render_day(cfg, a, note, week, extra=None):
                  + stat("away", fmt_dur(a["away"]), "Rời máy",
                         f"{a['away_count']} lần · TB mỗi lần {avg_dur(a['away'], a['away_count'])}")
                  + "</div>")
+        bd = breakdown_parts(a)
+        if bd:  # cộng các ô giờ ở trên cho thấy đủ giờ làm
+            p.append(f"<div class='banner sum'>🧮 Cộng giờ làm: <span class='num'>{esc(bd[0])}</span>"
+                     f"<span class='mut'>{esc(bd[1])}</span></div>")
         streak = extra.get("streak", 0)
         closed = a.get("vdi_closed") or []
         cards = [plain_stat("deep", f"{focus_score(a)}<small>/100</small>", "Điểm tập trung",

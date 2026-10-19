@@ -32,6 +32,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | AI giải thích điểm tổng | Tổng kết ngày, tuần | AI bắt buộc mở đầu bằng điểm tổng: mức gì, từng thành phần, phần kéo điểm xuống, làm gì để tăng; app tính sẵn số |
 | Lời khuyên khoa học khi điểm tổng dưới 50 | Tổng kết ngày | Một câu từ nghiên cứu thật (đã kiểm chứng), kèm lý do vì gia đình |
 | Số lần và trung bình mỗi lần: thu nhỏ VDI, ngồi yên, rời máy, ngồi yên ≥ 10 phút, bị cắt ngang mỗi giờ | `/today`, `/report` | Báo cáo HTML có thêm trung bình sao nhãng 14 ngày, giờ hay sao nhãng |
+| Cộng giờ làm cho thấy đủ giờ | `/today`, tổng kết ngày, báo cáo HTML | Trong VDI + ngoài VDI + inactive + rời máy + không ghi (tạm dừng, tắt tracker) = giờ làm chính thức trừ giờ trưa. Thu nhỏ VDI nằm trong ngoài VDI |
 | Làm thêm ngoài giờ (OT) | Tự động | Trước giờ làm, sau 17:00 chỉ cộng giờ gõ phím / rê chuột trong VDI, không tính sao nhãng; **giờ trưa không tính gì**. Sáng hôm sau báo OT kèm khoảng giờ (ví dụ 17:30–18:15) |
 | Tổng OT 14 ngày | Tổng kết 17:00, tổng kết tuần, lời chào sáng, báo cáo HTML | Tổng giờ OT và danh sách chỉ những ngày có OT, mỗi ngày bao nhiêu giờ, giờ nào |
 | Làm bù thứ 7, CN, ngày lễ | Nhấp đúp `lam_bu_ngoai_gio.bat` (Mac `.command`) | Chỉ ghi giờ làm trong VDI có gõ phím / chuột, không nhắc, không tính sao nhãng, không chấm điểm; làm xong (qua 17:00 và 30 phút không làm trong VDI) bot gửi ngay 🌙 tổng kết làm bù + file HTML; máy tắt trước đó thì sáng thứ Hai báo |

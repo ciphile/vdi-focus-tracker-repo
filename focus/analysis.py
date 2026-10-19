@@ -101,6 +101,9 @@ def analyze(db, cfg, day):
                            None if off else lunch_window(cfg, day))  # ngày nghỉ làm bù: không có giờ trưa
     result["goal_h"] = day_goal_hours(cfg, leave)
     result["leave"] = leave
+    # Giờ làm chính thức (đã trừ trưa, phần nghỉ phép): để cộng lại các mục cho thấy đủ giờ (time_breakdown).
+    result["windows"] = [] if off else official_windows(cfg, day, leave)
+    result["hours"] = {k: cfg[k] for k in ("work_start", "work_end", "lunch_start", "lunch_end")}
     if off:
         result["off"] = off
     with _memo_lock:
@@ -344,6 +347,28 @@ def _analyze_rows(rows, cfg, day, d0, d1, windows=None, skip=None):
         "vdi_closed": vdi_closed, "minimized_spans": min_spans,
     })
     return result
+
+
+def time_breakdown(a, now=None):
+    """Cộng lại giờ làm chính thức của ngày (tính tới now nếu ngày chưa hết): trong VDI + ngoài VDI + inactive + rời
+    máy + không ghi = tổng. Thu nhỏ VDI đã nằm trong "ngoài VDI" nên không cộng thêm. "Không ghi" = phần giờ làm tracker
+    không có mẫu: tạm dừng (/pause), tắt tracker, chưa bật máy. Tính theo phút đã làm tròn như các dòng của báo cáo nên
+    cộng tay luôn khớp. None khi không có số liệu hoặc ngày nghỉ làm bù (không có giờ làm chính thức)."""
+    wins = a.get("windows")
+    if not a.get("has_data") or a.get("off") or not wins:
+        return None
+    now = time.time() if now is None else now
+    total = sum(max(0.0, min(b, now) - s) for s, b in wins)
+    if total <= 0:
+        return None
+    mins = lambda sec: int(round((sec or 0) / 60))
+    parts = {k: mins(a.get(k, 0)) for k in ("vdi", "other", "idle", "away")}
+    total_m = mins(total)
+    gap = total_m - sum(parts.values())
+    if gap < 0:  # làm tròn từng mục lệch 1–2 phút: lấy tổng các mục
+        total_m, gap = sum(parts.values()), 0
+    return {"total": total_m, **parts, "unrecorded": gap, "minimized": mins(a.get("minimized", 0)),
+            "until": fmt_t(now) if now < max(b for _, b in wins) else None}
 
 
 OT_RANGE_GAP_SECONDS = 600  # hai đoạn làm ngoài giờ cách nhau dưới 10 phút: gộp thành một khoảng

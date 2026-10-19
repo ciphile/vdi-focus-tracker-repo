@@ -9,7 +9,7 @@ import os
 import re
 
 from . import persona, scoring
-from .analysis import DAY_NAMES, analyze, daily_stats, fmt_dur, fmt_t, focus_score, off_day, streak
+from .analysis import DAY_NAMES, analyze, daily_stats, fmt_dur, fmt_t, focus_score, off_day, streak, time_breakdown
 from .schedule import LEAVE_NAMES
 from .storage import get_note
 
@@ -204,6 +204,28 @@ def note_lines(note):
     return lines
 
 
+def breakdown_parts(a, now=None):
+    """(phép cộng, chú thích) cho dòng "Cộng giờ làm" của báo cáo ngày; None khi không có giờ làm chính thức."""
+    b = time_breakdown(a, now)
+    if not b:
+        return None
+    terms = [f"trong VDI {fmt_dur(b['vdi'] * 60)}", f"ngoài VDI {fmt_dur(b['other'] * 60)}",
+             f"inactive {fmt_dur(b['idle'] * 60)}", f"rời máy {fmt_dur(b['away'] * 60)}"]
+    if b["unrecorded"]:
+        terms.append(f"không ghi {fmt_dur(b['unrecorded'] * 60)}")
+    h = a["hours"]
+    span = ("giờ làm chính thức, đã trừ trưa và phần nghỉ phép" if a.get("leave")
+            else f"giờ làm {h['work_start']}–{h['work_end']} trừ trưa {h['lunch_start']}–{h['lunch_end']}")
+    if b["until"]:
+        span += f", tính tới {b['until']}"
+    notes = [span]
+    if b["minimized"]:
+        notes.append(f"thu nhỏ VDI {fmt_dur(b['minimized'] * 60)} đã nằm trong ngoài VDI")
+    if b["unrecorded"]:
+        notes.append("không ghi = tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm")
+    return " + ".join(terms) + f" = {fmt_dur(b['total'] * 60)}", "; ".join(notes)
+
+
 def summary_text(a, note, streak_days=None):
     """Tổng kết ngắn dạng chữ cho Telegram."""
     if not a["has_data"]:
@@ -230,6 +252,9 @@ def summary_text(a, note, streak_days=None):
               f"{avg_dur(a['idle'], a.get('short_idle_count', 0))}) · ≥ 10 phút: {a.get('inactive_10m_count', 0)} lần",
               f"Rời máy: {fmt_dur(a['away'])} ({a['away_count']} lần, TB {avg_dur(a['away'], a['away_count'])})",
               f"Bị cắt ngang: {sc['per_hour']:g} lần/giờ làm"]
+    bd = breakdown_parts(a)
+    if bd:
+        lines.insert(len(lines) - 1, f"🧮 Cộng giờ làm: {bd[0]}\n   ({bd[1]})")  # ngay dưới các dòng giờ
     if a.get("vdi_closed"):
         lines.append("VDI đã đóng (rời VDI quá lâu): " + ", ".join(f"{fmt_t(x)}–{fmt_t(y)}" for x, y in a["vdi_closed"]))
     if streak_days is not None:

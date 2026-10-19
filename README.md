@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.6.1 (`focus/__init__.py`) |
+| Phiên bản | 2.6.2 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -807,6 +807,7 @@ Mỗi `sample_seconds` (5 giây) tracker lấy 1 mẫu: trạng thái VDI, tên 
 | Ngồi yên / rời máy ≥ 10 phút | Số quãng không chạm phím/chuột liền từ 10 phút trở lên |
 | Rời máy: số lần, trung bình | Số lần rời máy (≥ 5 phút) và thời gian trung bình mỗi lần |
 | Bị cắt ngang mỗi giờ | (Số lần rời VDI + số lần ngồi yên 1–5 phút) / giờ có thao tác. Dùng trong điểm tổng |
+| 🧮 Cộng giờ làm | Trong VDI + ngoài VDI + inactive + rời máy + «không ghi» = giờ làm chính thức (`work_start`–`work_end` trừ giờ trưa và phần nghỉ phép; xem giữa ngày thì tính tới lúc xem). Thu nhỏ VDI đã nằm trong «ngoài VDI» nên không cộng thêm. «Không ghi» = lúc tạm dừng `/pause`, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy. OT nằm ngoài giờ làm nên không có trong phép cộng. Có trong `/today`, tổng kết cuối ngày và báo cáo HTML ngày |
 | Làm ngoài giờ (OT) | Giờ gõ phím / rê chuột trong VDI trước `work_start`, sau `work_end`, hoặc ngày nghỉ có bật bot (mục 1). Giờ trưa không tính. Cộng vào tập trung sâu nếu thành khối ≥ 20 phút. Lưu kèm các khoảng giờ (ví dụ 17:30–18:15; hai đoạn cách nhau ≤ 10 phút gộp làm một) |
 | OT 14 ngày | Tổng OT và danh sách các ngày có OT ≥ 1 phút trong 14 ngày gần nhất (tính cả hôm nay), ngày không OT không liệt kê. Có trong báo cáo HTML ngày / tuần, tổng kết 17:00, tổng kết tuần, lời chào sáng |
 | Bảng «app ngoài VDI» | Không bao giờ liệt kê chính Citrix (`citrix.desktopviewer.app.exe`, `citrix.engineui.app.exe`, các process trong `vdi_processes`, `vdi_session_processes`). Lúc VDI thu nhỏ mà khung Citrix vẫn ở trước, thời gian đó vẫn tính là «thu nhỏ VDI» |
@@ -821,6 +822,8 @@ Trong VDI: 5h 10m · làm ngoài giờ (OT) 40m
 Ngoài VDI: 35m (9 lần rời), thu nhỏ VDI 12m (4 lần)
 Inactive phím/chuột: 26m (11 lần, TB 2m) · ≥ 10 phút: 0 lần
 Rời máy: 38m (3 lần, TB 13m)
+🧮 Cộng giờ làm: trong VDI 5h 10m + ngoài VDI 35m + inactive 26m + rời máy 38m + không ghi 56m = 7h 45m
+   (giờ làm 08:00–17:00 trừ trưa 11:15–12:30; thu nhỏ VDI 12m đã nằm trong ngoài VDI; không ghi = tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm)
 Bị cắt ngang: 3.5 lần/giờ làm
 Chuỗi ngày đạt mục tiêu: 3 ngày 🔥
 Khối tập trung: 08:05–09:50, 10:10–11:15, 13:00–14:35, 19:00–19:40
@@ -1622,7 +1625,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.6.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.6.2
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1733,6 +1736,7 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 | Ở đâu | `reports/focus-YYYY-MM-DD.html` | `reports/focus-week-YYYY-Www.html` (ví dụ `focus-week-2026-W42.html`) |
 | Phần đầu | **Điểm tổng** thật to + robot quà tặng trong vòng tròn chấm bi, mức (kém / HG / RG / MG / PG), thanh từng thành phần (bao nhiêu điểm, góp bao nhiêu), phần kéo điểm xuống nhiều nhất, cách tăng điểm, **thang 5 robot** (robot hôm nay được tô nổi) | **Điểm tổng trung bình tuần** + robot, thành phần trung bình, ngày cao / thấp nhất, **bộ sưu tập robot** từng ngày |
 | Ô số liệu (6 ô màu) | Tập trung sâu (so mục tiêu), trong VDI, ngoài VDI (số lần rời, **TB mỗi lần**), thu nhỏ VDI (số lần, **TB mỗi lần**), ngồi yên (số lần, **TB mỗi lần**), rời máy (số lần, **TB mỗi lần**). «TB mỗi lần» = trung bình một lần kéo dài bao lâu, không phải trung bình cả ngày | Cùng 6 ô, cộng cả tuần; thêm TB mỗi ngày |
+| Dòng «🧮 Cộng giờ làm» | Ngay dưới 6 ô: trong VDI + ngoài VDI + inactive + rời máy + không ghi = giờ làm chính thức, để tự cộng thấy đủ giờ (thu nhỏ VDI đã nằm trong ngoài VDI) | Không có |
 | Thẻ lớn nền kem (dải màu trên đầu) | Điểm tập trung, OT (khoảng giờ), khối tập trung dài nhất, bị cắt ngang mỗi giờ, inactive / rời máy ≥ 10 phút, chuỗi ngày đạt mục tiêu, VDI bị đóng / tự ngắt. **OT = 0 thì không hiện thẻ OT**; các thẻ khác = 0 vẫn hiện | Điểm tập trung TB, ngày đạt mục tiêu, OT cả tuần (ẩn nếu 0), khối dài nhất, inactive ≥ 10 phút, chuỗi; chip nhỏ: giờ vàng, ngày nhiều / ít nhất |
 | Dòng thời gian | Thanh màu cả ngày, có vạch giờ. Chú thích đủ mọi màu, kể cả **sọc mờ = nghỉ trưa (không tính)** và **trắng = không ghi** (trước khi bắt đầu / sau khi ngừng dùng máy, hoặc ngoài giờ làm mà không làm trong VDI) | Mỗi ngày một thanh, cùng chú thích |
 | Bảng, biểu đồ | Khối tập trung (cột «Ngoài giờ»), app ngoài VDI (không có Citrix), biểu đồ theo giờ, 7 ngày gần nhất | Biểu đồ tập trung sâu mỗi ngày có vạch mục tiêu, bảng 12 cột từng ngày, app ngoài VDI cả tuần |
@@ -3392,7 +3396,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.6.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.6.2`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.
