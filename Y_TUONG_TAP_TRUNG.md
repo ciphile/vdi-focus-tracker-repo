@@ -46,6 +46,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Tính năng | Lệnh | Ghi chú |
 |---|---|---|
 | Nhắc khi sao nhãng (làm ngoài VDI, VDI thu nhỏ) | `/nudge off` / `nhe` / `vua` / `nghiem` | 4 mức. Mặc định: nhắc khi ra ngoài VDI quá 10 phút |
+| Câu nhắc không lặp, theo giọng × mức nhắc | `/style`, `/nudge` | 12 danh sách (3 mức nhắc × 4 giọng), mỗi danh sách 20 câu viết sẵn; bot luân phiên, dùng hết mới lặp lại. Câu nhắc tên sếp và các tin rời máy, nghỉ chân, tiến độ cũng luân phiên; AI rớt mạng vẫn đổi câu |
 | Tắt / bật lại tracker giữa ngày vẫn đếm tiếp | Tự động | Số lần, số phút sao nhãng và số lần nhắc hôm nay lưu vào DB khoảng 25 phút một lần và khi tracker tự tắt; bật lại trong ngày thì đếm tiếp, không về 0. Mức nhẹ đã nhắc rồi thì vẫn im |
 | Báo khi rời máy quá lâu, chào khi quay lại | — | Chỉ trong giờ làm, trừ giờ trưa |
 | Báo ngay khi cửa sổ VDI biến mất (Citrix tự ngắt sau khoảng 10–20 phút không dùng) | — | Chỉ 08:00–17:00, trừ trưa, và chỉ khi hôm đó đã làm trong VDI |

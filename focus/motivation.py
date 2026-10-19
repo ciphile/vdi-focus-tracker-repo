@@ -87,7 +87,8 @@ def system_prompt(cfg, extra=""):
 
 
 RECENT_QUOTE_DAYS = 2   # "đừng lặp lại" chỉ gồm câu gửi hôm nay và hôm qua; câu cũ hơn lặp lại cũng được
-RECENT_QUOTE_MAX = 30   # chặn trên phòng khi một ngày gửi quá nhiều
+RECENT_QUOTE_MAX = 30   # chặn trên phòng khi một ngày gửi quá nhiều (dùng để LỌC danh sách câu trích, không chép vào prompt)
+AVOID_SHOW_MAX = 5      # prompt chỉ chép lại tối đa 5 câu gửi gần nhất: prompt không phình to theo số lần nhắc
 
 
 def quote_of(text):
@@ -121,7 +122,10 @@ def _recent_exercises(db, limit=6):
 
 
 def _avoid_block(recent):
-    return ("\n\nĐừng lặp lại các câu đã gửi hôm nay và hôm qua (nguyên văn):\n" + "\n".join(f"- {r}" for r in recent)
+    """Tối đa AVOID_SHOW_MAX câu mới nhất. Các câu cũ hơn (tới RECENT_QUOTE_MAX) đã bị bỏ khỏi DANH SÁCH CÂU TRÍCH
+    (quotes.fresh) nên AI không chọn lại được, không cần chép vào prompt: độ dài prompt luôn có giới hạn."""
+    recent = list(recent or [])[:AVOID_SHOW_MAX]
+    return ("\n\nĐừng lặp lại các câu vừa gửi gần đây (nguyên văn):\n" + "\n".join(f"- {r}" for r in recent)
             if recent else "")
 
 
@@ -228,10 +232,30 @@ def morning_message(cfg, db, info, style=None):
         return text
     quote = _local(style, recent)
     _remember(db, style, quote)
-    lines = ["Chào buổi sáng! Chúc bạn một ngày làm việc nhẹ nhàng và hiệu quả.", quote]
+    lines = [random.choice(MORNING_HELLO), quote]
     if info.get("first_task"):
-        lines.append(f"Bắt đầu ngay với: {info['first_task']}. Bạn làm được!")
+        lines.append(random.choice(MORNING_FIRST).format(task=info["first_task"]))
     return "\n".join(lines)
+
+
+# Dự phòng khi AI lỗi / rớt mạng: chọn ngẫu nhiên để tin sáng không lặp một câu mỗi ngày.
+MORNING_HELLO = (
+    "Chào buổi sáng! Chúc bạn một ngày làm việc nhẹ nhàng và hiệu quả.",
+    "Chào ngày mới! Mong hôm nay mọi việc trôi chảy.",
+    "Buổi sáng tốt lành! Mình cùng bắt đầu thật nhẹ nhàng nhé.",
+    "Chào buổi sáng! Một tách cà phê, một việc quan trọng, vậy là đủ khởi động.",
+    "Ngày mới đến rồi! Chúc bạn tập trung tốt và về đúng giờ.",
+    "Chào buổi sáng! Hôm nay làm từng việc một thôi, không vội.",
+    "Sáng nay trời đẹp để làm việc đó! Chúc bạn một ngày suôn sẻ.",
+    "Chào ngày mới! Giữ VDI mở, giữ đầu óc thoáng, mọi thứ sẽ ổn.",
+)
+MORNING_FIRST = (
+    "Bắt đầu ngay với: {task}. Bạn làm được!",
+    "Việc đầu tiên hôm nay: {task}. Làm luôn cho nóng nhé.",
+    "Khởi động bằng {task} nha, xong việc này là nhẹ cả ngày.",
+    "Mở VDI và làm {task} trước tiên nhé.",
+    "Ưu tiên số một: {task}. Cố lên!",
+)
 
 
 ASK_TASK = """VIỆC CẦN LÀM: người dùng đang ở chế độ "hỏi AI" của bot và gửi câu hỏi dưới đây. Câu hỏi có thể về

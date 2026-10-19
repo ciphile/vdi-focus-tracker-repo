@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.7.0 (`focus/__init__.py`) |
+| Phiên bản | 2.8.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1133,6 +1133,8 @@ Sao nhãng = đang dùng phím/chuột nhưng VDI không ở trước (app khác
 
 Kèm một câu khích lệ (AI nếu có, tắt bằng `/encourage off`): mức vừa từ lần nhắc thứ 2 trong ngày; mức nghiêm ở lần nhắc lại đầu tiên của mỗi lần sao nhãng; mức nhẹ không. Lần nhắc thứ 2 trở đi của cùng một lần sao nhãng có thêm câu "doạ nhẹ" nhắc tên sếp (nếu `ten_sep` có trong persona). Có kế hoạch hôm nay thì thêm dòng «Quay lại: <việc đầu tiên>».
 
+**Câu mở đầu tin nhắc** viết sẵn (không gọi AI), theo ma trận **mức nhắc × giọng bot**: 3 mức (nhẹ / vừa / nghiêm) × 4 giọng (`than_mat`, `vui_tuoi`, `hai_huoc`, `sep_kho_tinh`, đổi bằng `/style`) = 12 ô, mỗi ô 20 câu (file `focus/nudge_lines.py`), cộng vài câu riêng cho trường hợp VDI thu nhỏ / đang dùng app khác (`focus/persona.py`, `LEADS`). Bot luân phiên: dùng hết các câu trong ô rồi mới lặp lại, vòng mới không lặp ngay câu vừa gửi. Câu doạ nhẹ nhắc tên sếp cũng luân phiên (6 câu mỗi giọng). Giọng sếp khó tính không có emoji. Muốn thêm câu: thêm vào đúng ô trong `focus/nudge_lines.py`, giữ `{u}` (cách gọi), `{U}` (viết hoa đầu câu), `{me}` / `{Me}` (bot tự xưng). Giọng hài hước + mức nghiêm có thêm vài câu hài hơi "đen" (kiểu "tưởng bị táo bón nặng"); các giọng khác không có. Các tin khác (rời máy, nghỉ chân, uống nước, tiến độ) cũng có 6 câu mỗi giọng và luân phiên. Tất cả viết sẵn nên **AI rớt mạng vẫn đổi câu**; câu khích lệ và lời chào sáng khi AI lỗi cũng chọn ngẫu nhiên trong danh sách có sẵn.
+
 Ví dụ một ngày (kiểm bằng `tests/test_nudge_levels.py`): 08:30–08:50 Chrome 20' · 09:10–09:28 VDI thu nhỏ 18' · 09:38 Chrome 8' · 09:56 Chrome 7' rồi khoá máy 30', mở lại Chrome 10' · 10:53 giờ vàng Chrome 6'.
 
 | Mức | Số tin | Lúc nào |
@@ -1628,7 +1630,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.7.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.8.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -2854,7 +2856,7 @@ Tình huống lúc này: buổi chiều, đang giữ nhịp tốt; đã tập tr
 
 Trả lời đúng 2 dòng: dòng 1 là câu trích (kèm nguồn), dòng 2 là một câu ngắn gắn với tình huống, gợi ý một bước nhỏ làm ngay.
 
-Đừng lặp lại các câu đã gửi hôm nay và hôm qua (nguyên văn):
+Đừng lặp lại các câu vừa gửi gần đây (nguyên văn):
 - "Đường tuy ngắn, không đi không bao giờ đến; việc tuy nhỏ, không làm chẳng bao giờ nên." — Tuân Tử
 
 DANH SÁCH CÂU TRÍCH ĐƯỢC DÙNG (app đã đối chiếu nguyên văn): cần câu trích thì CHỈ chọn MỘT câu trong danh sách này, chép đúng từng chữ và ghi đúng nguồn như bên dưới, đặt trong ngoặc kép. Không sửa chữ, không ghép câu, không dùng câu nào ngoài danh sách.
@@ -3400,7 +3402,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.7.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.8.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

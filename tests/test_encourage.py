@@ -123,14 +123,15 @@ class EncourageTest(TempCase):
     def test_offline_fallback_positive(self):
         self.cfg["encouragement_styles"] = ["bible"]
         fake, out = self.morning(Calls(fail=True))
-        self.assertIn("Chào buổi sáng", out[0])
+        self.assertIn(out[0].splitlines()[0], motivation.MORNING_HELLO)
         self.assertTrue(any(ref in out[0] for _, ref in motivation.BIBLE))
 
     def test_no_key_still_sends(self):
         self.cfg["gemini_api_key"] = ""
         fake, out = self.morning()
         self.assertEqual(fake.calls, [])
-        self.assertIn("Chào buổi sáng", out[0])
+        from focus import motivation
+        self.assertIn(out[0].splitlines()[0], motivation.MORNING_HELLO)   # AI không có: chào bằng câu có sẵn, ngẫu nhiên
 
     def test_disabled_sends_nothing(self):
         self.cfg["encouragement_enabled"] = False

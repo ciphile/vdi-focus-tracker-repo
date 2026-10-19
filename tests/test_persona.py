@@ -131,10 +131,11 @@ class LeadAndInstructionsTest(TempCase):
 
     def test_lead_uses_address_and_capital(self):
         p = dict(persona.DEFAULT, giong="vui_tuoi", goi_nguoi_dung="bro")
-        self.assertEqual(persona.lead("away", p), "Bro ơi, ghế đang trống nè! 🪑")
+        with mock.patch.object(persona.random, "choice", lambda xs: xs[0]):
+            self.assertEqual(persona.lead("away", p), "Bro ơi, ghế đang trống nè! 🪑")
         with mock.patch.object(persona.random, "choice", lambda xs: xs[0]):
             p = dict(persona.DEFAULT, giong="hai_huoc", goi_nguoi_dung="bro")
-            self.assertEqual(persona.lead("out_of_vdi", p), "Bro ơi, Chrome không trả lương cho bro đâu nha 😄")
+            self.assertEqual(persona.lead("out_of_vdi", p), "Bro ơi, app kia không trả lương cho bro đâu nha 😄")
 
     def test_boss_lead_empty_without_boss(self):
         for tone in persona.TONES:

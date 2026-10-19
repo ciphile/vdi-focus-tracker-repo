@@ -33,7 +33,7 @@ def out_of_vdi(data, plan=None, p=_persona.DEFAULT):
     where = WHERE.get(data["vdi_state"], "ngoài VDI")
     first = (plan or "").strip().splitlines()[:1]
     kind = "minimized" if data["vdi_state"] == "minimized" else "out_of_vdi"
-    lead = _persona.lead(kind + {"nhe": "_nhe", "nghiem": "_nghiem"}.get(level, ""), p) or _persona.lead("out_of_vdi", p)
+    lead = _persona.nudge_lead(kind, level, p)
     tail = LEVEL_TAIL.get(level, {}).get(_tone(p), LEVEL_TAIL.get(level, {}).get("", ""))
     count = ""
     if level == "nghiem":

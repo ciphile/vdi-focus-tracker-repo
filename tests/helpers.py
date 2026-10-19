@@ -37,6 +37,7 @@ class TempCase(unittest.TestCase):
         logs.reset()
         logs.setup(self.cfg["data_dir"], console=False)
         holidays.clear_memo()
+        persona._USED.clear()  # câu nhắc luân phiên: mỗi test bắt đầu vòng mới
         # Test không bao giờ gọi mạng thật (trang MOM): test nào cần tải thì tự mock _download / urlopen.
         guard = mock.patch.object(holidays, "_download", side_effect=OSError("test: không gọi mạng thật"))
         guard.start()
