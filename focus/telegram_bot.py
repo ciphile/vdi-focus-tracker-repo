@@ -29,7 +29,7 @@ from .analysis import (analyze, daily_stats, day_facts, fmt_dur, fmt_t, focus_sc
                        streak, week_facts)
 from .logs import audit, get_logger
 from .messages import golden_tip
-from .report import ot_history, ot_history_text, summary_text, week_text, write_report, write_week_report
+from .report import late_ot, ot_history, ot_history_text, summary_text, week_text, write_report, write_week_report
 from .schedule import LEAVE_NAMES, in_leave
 from .storage import append_note, db_path, get_note, last_tomorrow, mark_sent, open_db, save_note, unmark_sent
 
@@ -367,7 +367,7 @@ class TelegramBot:
             return True
         self.auto_energy(day, a)
         note = get_note(self.db, day)
-        text = summary_text(a, note, streak(self.db, self.cfg, day))
+        text = summary_text(a, note, streak(self.db, self.cfg, day), late_ot(self.db, self.cfg, day))
         ot_text = ot_history_text(ot_history(self.db, self.cfg, day))
         if ot_text:
             text += "\n\n" + ot_text

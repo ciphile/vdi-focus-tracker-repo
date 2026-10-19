@@ -9,7 +9,8 @@ import os
 import re
 
 from . import persona, scoring
-from .analysis import DAY_NAMES, analyze, daily_stats, fmt_dur, fmt_t, focus_score, off_day, streak, time_breakdown
+from .analysis import (DAY_NAMES, analyze, daily_stats, day_bounds, fmt_dur, fmt_t, focus_score, off_day, ot_ranges,
+                       streak, time_breakdown)
 from .schedule import LEAVE_NAMES
 from .storage import get_note
 
@@ -75,6 +76,55 @@ def ot_history(db, cfg, day, days=OT_HISTORY_DAYS):
         rows.append({"day": ds, "ot": rec["ot"], "off": rec.get("off") or "",
                      "ranges": [tuple(r) for r in rec.get("ot_ranges") or []]})
     return {"days": rows, "total": sum(r["ot"] for r in rows), "count": len(rows), "span": days}
+
+
+LATE_OT_MAX_DAYS = 7  # nhìn lùi tối đa chừng này ngày để tìm ngày làm việc trước
+
+
+def late_ot(db, cfg, day, max_days=LATE_OT_MAX_DAYS):
+    """OT chưa có trong báo cáo cuối ngày trước: các ngày từ ngày làm việc trước tới hôm qua (cũ trước mới sau).
+    Ngày làm việc: chỉ phần OT sau giờ gửi tổng kết (daily_summary_at), vì phần trước đó đã nằm trong báo cáo hôm đó.
+    Ngày nghỉ (cuối tuần, lễ, /off) có bật bot làm bù: cả ngày. OT luôn thuộc ngày nó xảy ra (theo lịch, qua 00:00 là
+    ngày mới): ở đây chỉ nhắc lại để thấy đủ, không cộng vào hôm nay.
+    Trả [{"day", "off", "late" (giây), "ranges", "total" (giây thực làm trong VDI cả ngày đó = trong giờ + OT)}]."""
+    base = dt.date.fromisoformat(day)
+    h, m = map(int, cfg["daily_summary_at"].split(":"))
+    rows = []
+    for i in range(1, max_days + 1):
+        ds = (base - dt.timedelta(days=i)).isoformat()
+        off = off_day(db, cfg, ds)
+        a = analyze(db, cfg, ds)
+        if a.get("has_data"):
+            cut = day_bounds(ds)[0] if off else day_bounds(ds)[0] + h * 3600 + m * 60
+            late = sum(e - max(s, cut) for s, e, kind in a["timeline"] if kind == "ot" and e > cut)
+            if late >= OT_MIN_SECONDS:
+                rows.append({"day": ds, "off": off or "", "late": late,
+                             "total": round(a["vdi"] / 60) * 60 + round(a.get("ot", 0) / 60) * 60,
+                             "ranges": [(max(s, cut), e) for s, e in ot_ranges(a) if e > cut]})
+        if not off:
+            break
+    return rows[::-1]
+
+
+def real_work_line(a):
+    """'💼 Thực làm trong VDI: 5h 00m (trong giờ 2h 00m + OT 3h 00m)': OT của chính ngày này, không lấy ngày khác."""
+    vdi, ot = (int(round((a.get(k) or 0) / 60)) for k in ("vdi", "ot"))  # cộng theo phút đã làm tròn: cộng tay khớp
+    if not ot:
+        return f"💼 Thực làm trong VDI: {fmt_dur(vdi * 60)} (chưa có OT)"
+    return f"💼 Thực làm trong VDI: {fmt_dur((vdi + ot) * 60)} (trong giờ {fmt_dur(vdi * 60)} + OT {fmt_dur(ot * 60)})"
+
+
+def late_ot_texts(rows):
+    """Mỗi dòng: OT ngày trước làm sau giờ báo cáo + tổng thực làm cả ngày đó."""
+    out = []
+    for r in rows:
+        d = dt.date.fromisoformat(r["day"])
+        name = f"{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][d.weekday()]} {d:%d/%m}"
+        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"])
+        what = f"làm bù {name} ({r['off']})" if r["off"] else f"OT {name} sau giờ báo cáo"
+        out.append(f"🌙 {what}: {fmt_dur(r['late'])}" + (f" ({ranges})" if ranges else "")
+                   + f" → {name} thực làm trong VDI tổng {fmt_dur(r['total'])}")
+    return out
 
 
 def ot_label(row):
@@ -144,7 +194,7 @@ def write_report(db, cfg, day):
                         (f"review:{day}:%",)).fetchone()
     extra = {"streak": streak(db, cfg, day), "review": review[0] if review else "",
              "distractions": distraction_stats(db, cfg, day), "ot_history": ot_history(db, cfg, day),
-             "pending": pending.pending_after(db, cfg, day, off_day)}
+             "late_ot": late_ot(db, cfg, day), "pending": pending.pending_after(db, cfg, day, off_day)}
     path = os.path.join(cfg["report_dir"], f"focus-{day}.html")
     _write(path, render_html(cfg, a, get_note(db, day), [w for w in week if w], extra))
     return path, a
@@ -226,8 +276,8 @@ def breakdown_parts(a, now=None):
     return " + ".join(terms) + f" = {fmt_dur(b['total'] * 60)}", "; ".join(notes)
 
 
-def summary_text(a, note, streak_days=None):
-    """Tổng kết ngắn dạng chữ cho Telegram."""
+def summary_text(a, note, streak_days=None, late=None):
+    """Tổng kết ngắn dạng chữ cho Telegram. late: late_ot() (OT ngày trước làm sau giờ báo cáo, chỉ nhắc lại)."""
     if not a["has_data"]:
         return "\n".join([f"{a['day']}: chưa có dữ liệu." + (f"\n🌴 {leave_line(a)}" if a.get("leave") else "")]
                          + note_lines(note))
@@ -246,6 +296,7 @@ def summary_text(a, note, streak_days=None):
               f"Tập trung sâu: {fmt_dur(a['deep'])} / mục tiêu {a['goal_h']:g}h · điểm tập trung {focus_score(a)}/100",
               f"Trong VDI: {fmt_dur(a['vdi'])}"
               + (f" · làm ngoài giờ (OT) {fmt_dur(a['ot'])}" if a.get("ot") else ""),
+              real_work_line(a),
               f"Ngoài VDI: {fmt_dur(a['other'])} ({a['exits']} lần rời), thu nhỏ VDI {fmt_dur(a['minimized'])} "
               f"({a.get('minimize_count', 0)} lần)",
               f"Inactive phím/chuột: {fmt_dur(a['idle'])} ({a.get('short_idle_count', 0)} lần, TB "
@@ -255,6 +306,7 @@ def summary_text(a, note, streak_days=None):
     bd = breakdown_parts(a)
     if bd:
         lines.insert(len(lines) - 1, f"🧮 Cộng giờ làm: {bd[0]}\n   ({bd[1]})")  # ngay dưới các dòng giờ
+    lines += late_ot_texts(late or [])
     if a.get("vdi_closed"):
         lines.append("VDI đã đóng (rời VDI quá lâu): " + ", ".join(f"{fmt_t(x)}–{fmt_t(y)}" for x, y in a["vdi_closed"]))
     if streak_days is not None:

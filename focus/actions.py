@@ -27,7 +27,7 @@ from .analysis import analyze, daily_stats, day_goal_hours, golden_hours, off_da
 from .config import DEFAULTS, STOP_AFTER_KEYS, norm_hhmm, run_window_conflict
 from .logs import audit, get_logger
 from .messages import golden_tip
-from .report import summary_text, write_report
+from .report import late_ot, summary_text, write_report
 from .schedule import LEAVE_NAMES
 from .storage import append_note, get_note, mark_sent, save_note
 
@@ -528,7 +528,8 @@ def _past_day(bot, args, cmd):
 def _today(bot, args):
     day = _past_day(bot, args, "/today")
     if day:
-        bot.send(summary_text(analyze(bot.db, bot.cfg, day), get_note(bot.db, day), streak(bot.db, bot.cfg, day)))
+        bot.send(summary_text(analyze(bot.db, bot.cfg, day), get_note(bot.db, day), streak(bot.db, bot.cfg, day),
+                              late_ot(bot.db, bot.cfg, day)))
 
 
 def _report(bot, args):

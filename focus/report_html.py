@@ -12,7 +12,7 @@ import math
 
 from . import energy, robots, scoring
 from .analysis import day_bounds, fmt_dur, fmt_t, focus_score, hour_end, ot_ranges
-from .report import avg_dur, breakdown_parts, esc, insights, leave_line
+from .report import avg_dur, breakdown_parts, esc, insights, late_ot_texts, leave_line, real_work_line
 
 WEEKDAY_FULL = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ nhật"]
 WEEKDAY_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
@@ -511,6 +511,12 @@ def render_day(cfg, a, note, week, extra=None):
         if bd:  # cộng các ô giờ ở trên cho thấy đủ giờ làm
             p.append(f"<div class='banner sum'>🧮 Cộng giờ làm: <span class='num'>{esc(bd[0])}</span>"
                      f"<span class='mut'>{esc(bd[1])}</span></div>")
+        # Thực làm trong VDI = trong giờ + OT của CHÍNH ngày này; OT ngày trước làm sau giờ báo cáo chỉ nhắc lại.
+        p.append(f"<div class='banner sum'>{esc(real_work_line(a))}<span class='mut'>OT tính cho đúng ngày làm "
+                 "(qua 00:00 là ngày mới), không cộng sang ngày khác</span></div>")
+        for line in late_ot_texts(extra.get("late_ot") or []):
+            p.append(f"<div class='banner sum'>{esc(line)}<span class='mut'>làm sau khi báo cáo hôm đó đã gửi, "
+                     "nên nhắc lại ở đây; đã cộng vào đúng ngày đó, không cộng vào hôm nay</span></div>")
         streak = extra.get("streak", 0)
         closed = a.get("vdi_closed") or []
         cards = [plain_stat("deep", f"{focus_score(a)}<small>/100</small>", "Điểm tập trung",
