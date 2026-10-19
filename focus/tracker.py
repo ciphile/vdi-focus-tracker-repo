@@ -40,6 +40,7 @@ PERF_EVERY_SECONDS = 600
 MAX_CONSECUTIVE_ERRORS = 720  # ~1 giờ đọc lỗi liên tục thì dừng hẳn (log + audit CRASH)
 LOCK_WAIT_SECONDS = 120       # bản mới chờ bản cũ thoát (vd. Task Scheduler bật lại đúng lúc bản cũ đang tắt)
 ALERT_COUNTERS_KEY = "alert_day_counters"  # bảng prefs: bộ đếm sao nhãng hôm nay (giữ qua lần tắt/bật)
+ALERT_SAVE_TICKS = 300     # lưu bộ đếm sao nhãng mỗi 300 vòng (~25 phút, mẫu 5 giây) và lúc chốt ngày
 MAX_PENDING_ROWS = 2000       # DB bận/đầy: giữ tối đa chừng này mẫu chưa ghi trong RAM (~2,8 giờ)
 
 
@@ -650,7 +651,7 @@ class Tracker:
                     work = is_work_time(cfg, hhmm, off, leave)
                     for kind, data in self.alerts.update(s, now, work, golden=in_golden(golden, hhmm)):
                         self.dispatch(kind, data, note)
-                    if ticks % 12 == 0:  # bộ đếm sao nhãng trong ngày: lưu mỗi phút (chỉ khi đổi)
+                    if ticks % ALERT_SAVE_TICKS == 0:  # bộ đếm sao nhãng trong ngày: lưu ~25 phút/lần (chỉ khi đổi)
                         self._save_alert_counters()
                     if ticks % 6 == 0:  # việc theo giờ: kiểm tra mỗi 30 giây là đủ
                         active = not s["locked"] and s["idle"] < cfg["idle_threshold_seconds"]

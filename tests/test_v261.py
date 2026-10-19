@@ -83,15 +83,18 @@ class RestartTest(_Base):
         tr, fc, *_ = make_tracker(self.cfg, FRIDAY, "08:30:00", SCRIPT)
         seen = {}
 
-        def peek(f):  # đọc DB giữa chừng (trước khi tracker thoát): bộ đếm đã được lưu định kỳ
+        def peek(f):  # đọc DB giữa chừng (trước khi tracker thoát): bộ đếm đã được lưu định kỳ (~25 phút/lần)
             if "mid" not in seen and f.t >= hms(FRIDAY, "09:56:00"):
                 db = open_db(db_path(self.cfg))
                 seen["mid"] = json.loads(get_pref(db, ALERT_COUNTERS_KEY) or "null")
                 db.close()
         fc.hook = peek
         tr.run()
-        self.assertEqual(seen["mid"]["episodes"], 2)
-        self.assertEqual(seen["mid"]["nudges"], 2)
+        self.assertEqual(seen["mid"]["episodes"], 2)   # lần lưu 09:45: lần 2 đã đủ 1 phút
+        self.assertEqual(seen["mid"]["nudges"], 1)     # nhắc lần 2 lúc 09:50, sau lần lưu 09:45
+        db = open_db(db_path(self.cfg))               # tracker thoát (auto_stop) thì lưu nốt
+        self.assertEqual(json.loads(get_pref(db, ALERT_COUNTERS_KEY))["nudges"], 2)
+        db.close()
 
         cfg2 = dict(self.cfg, auto_stop_at="10:30")
         tr2, *_ = make_tracker(cfg2, FRIDAY, "10:00:00", SCRIPT)
