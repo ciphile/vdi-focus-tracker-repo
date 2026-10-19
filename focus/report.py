@@ -273,7 +273,12 @@ def breakdown_parts(a, now=None):
         notes.append(f"thu nhỏ VDI {fmt_dur(b['minimized'] * 60)} đã nằm trong ngoài VDI")
     if b["unrecorded"]:
         notes.append("không ghi = tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm")
-    return " + ".join(terms) + f" = {fmt_dur(b['total'] * 60)}", "; ".join(notes)
+    text = " + ".join(terms) + f" = {fmt_dur(b['total'] * 60)}"
+    ot = int(round((a.get("ot") or 0) / 60))  # OT của CHÍNH ngày này (qua 00:00 là ngày mới), không lấy ngày khác
+    if ot:
+        text += f" + OT {fmt_dur(ot * 60)} (ngoài giờ làm) = {fmt_dur((b['total'] + ot) * 60)}"
+        notes.append("OT chỉ tính phần làm trong VDI ngoài giờ làm của đúng ngày này")
+    return text, "; ".join(notes)
 
 
 def summary_text(a, note, streak_days=None, late=None):

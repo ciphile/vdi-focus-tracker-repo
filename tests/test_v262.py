@@ -104,3 +104,34 @@ class RealWorkAndLateOtTest(TempCase):
         late = report.late_ot(self.db, self.cfg, "2026-10-19")
         self.assertEqual([r["day"] for r in late], ["2026-10-17"])
         self.assertIn("🌙 làm bù T7 17/10", report.late_ot_texts(late)[0])
+
+
+class SumWithOtTest(TempCase):
+    """2.8.1: dòng 🧮 cộng thêm OT của CHÍNH ngày đó; OT hôm qua (kể cả làm tới khuya) không cộng vào hôm nay."""
+
+    def setUp(self):
+        super().setUp()
+        self.db = open_db(db_path(self.cfg))
+        insert_run(self.db, MON, "08:00", 195)
+        insert_run(self.db, MON, "12:30", 270)
+        insert_run(self.db, MON, "21:00", 50)                       # thứ Hai: OT tối 50 phút
+        insert_run(self.db, MON, "23:30", 29)                       # làm tới gần 00:00, vẫn là OT thứ Hai
+        insert_run(self.db, TUE, "00:00", 40)                       # qua 00:00: OT của thứ Ba
+        insert_run(self.db, TUE, "08:00", 60)
+
+    def test_sum_adds_only_that_days_ot(self):
+        mon = report.breakdown_parts(analyze(self.db, self.cfg, MON), ts(MON, "23:59"))
+        self.assertIn("= 7h 45m + OT 1h 19m (ngoài giờ làm) = 9h 04m", mon[0])
+        self.assertIn("OT chỉ tính", mon[1])
+        tue = report.breakdown_parts(analyze(self.db, self.cfg, TUE), ts(TUE, "20:00"))
+        self.assertIn("+ OT 40m (ngoài giờ làm) = ", tue[0])     # chỉ 40 phút sau 00:00, không lấy OT thứ Hai
+        self.assertNotIn("1h 19m", tue[0])
+
+    def test_no_ot_tail_without_ot(self):
+        insert_run(self.db, FRI, "08:00", 60)
+        self.assertNotIn("OT", report.breakdown_parts(analyze(self.db, self.cfg, FRI), ts(FRI, "20:00"))[0])
+
+    def test_text_and_html(self):
+        a = analyze(self.db, self.cfg, MON)
+        self.assertIn("+ OT 1h 19m (ngoài giờ làm) = 9h 04m", report.summary_text(a, {}))
+        self.assertIn("+ OT 1h 19m (ngoài giờ làm) = 9h 04m", report_html.render_day(self.cfg, a, {}, [], {}))

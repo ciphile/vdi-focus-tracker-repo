@@ -34,4 +34,4 @@ Mỗi module một việc, sửa tính năng nào mở đúng file đó:
 Không cần cài thêm gói nào: chỉ dùng thư viện chuẩn của Python 3.9+.
 """
 
-__version__ = "2.8.0"
+__version__ = "2.8.1"
