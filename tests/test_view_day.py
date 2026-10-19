@@ -96,7 +96,8 @@ class ViewDayBotTest(TempCase):
         save_note(self.bot.db, self.yesterday, {"plan": "kế hoạch hôm qua", "energy": 3})
         save_note(self.bot.db, self.day, {"plan": "kế hoạch hôm nay"})
         out = "\n".join(self.say("/today hôm qua"))
-        self.assertIn(self.yesterday, out)
+        import datetime as _dt
+        self.assertIn(f"{_dt.date.fromisoformat(self.yesterday):%d/%m/%Y}", out)
         self.assertIn("kế hoạch hôm qua", out)
         self.assertNotIn("kế hoạch hôm nay", out)
 

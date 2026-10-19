@@ -281,47 +281,110 @@ def breakdown_parts(a, now=None):
     return text, "; ".join(notes)
 
 
-def summary_text(a, note, streak_days=None, late=None):
-    """Tổng kết ngắn dạng chữ cho Telegram. late: late_ot() (OT ngày trước làm sau giờ báo cáo, chỉ nhắc lại)."""
+RULE = "------------------------------"
+
+
+def _section(title, rows):
+    """Một mục của tin Telegram: tiêu đề, gạch ngang, các dòng (đã thụt lề), dòng trống phía sau."""
+    return [title, RULE] + rows + [""]
+
+
+def _late_rows(rows):
+    """OT ngày trước làm sau giờ báo cáo (chỉ nhắc lại, đã cộng vào đúng ngày đó), dạng bullet không emoji."""
+    out = []
+    for r in rows:
+        d = dt.date.fromisoformat(r["day"])
+        name = f"{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][d.weekday()]} {d:%d/%m}"
+        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"])
+        what = f"Làm bù {name} ({r['off']})" if r["off"] else f"OT {name} sau giờ báo cáo"
+        out.append(f"  • {what}: {fmt_dur(r['late'])}" + (f" ({ranges})" if ranges else ""))
+        out.append(f"      {name} thực làm trong VDI tổng {fmt_dur(r['total'])}")
+    return out
+
+
+def summary_text(a, note, streak_days=None, late=None, now=None):
+    """Tổng kết dạng chữ cho Telegram (/today, tổng kết cuối ngày): chia mục, gạch ngang, bullet, thụt lề, ít emoji.
+    late: late_ot() (OT ngày trước làm sau giờ báo cáo, chỉ nhắc lại, không cộng vào ngày này)."""
     if not a["has_data"]:
-        return "\n".join([f"{a['day']}: chưa có dữ liệu." + (f"\n🌴 {leave_line(a)}" if a.get("leave") else "")]
+        return "\n".join([f"{a['day']}: chưa có dữ liệu." + (f"\n{leave_line(a)}" if a.get("leave") else "")]
                          + note_lines(note))
+    d = dt.date.fromisoformat(a["day"])
+    head = f"TỔNG KẾT {DAY_NAMES[d.weekday()].upper()} {d:%d/%m/%Y}"
     if a.get("off"):  # ngày nghỉ bật tracker làm bù: chỉ có giờ làm trong VDI, không chấm sao nhãng / điểm
-        lines = [f"Ngày {a['day']} là ngày nghỉ ({a['off']}), bạn bật bot làm bù ({fmt_t(a['first'])}–{fmt_t(a['last'])})",
-                 f"🌙 Làm bù trong VDI: {fmt_dur(a['ot'])} · tập trung sâu {fmt_dur(a['deep'])}",
-                 "Ngày nghỉ bot chỉ cộng giờ làm trong VDI, không tính sao nhãng, không chấm điểm."]
+        lines = _section(head, [f"  Ngày nghỉ ({a['off']}), bạn bật bot làm bù {fmt_t(a['first'])}–{fmt_t(a['last'])}"])
+        rows = [f"  • Làm bù trong VDI: {fmt_dur(a['ot'])}", f"  • Tập trung sâu: {fmt_dur(a['deep'])}"]
         if a["blocks"]:
-            lines.append("Khối tập trung: " + ", ".join(f"{fmt_t(b['start'])}–{fmt_t(b['end'])}" for b in a["blocks"]))
-        return "\n".join(lines + note_lines(note))
-    lines = [f"Tổng kết {a['day']} ({fmt_t(a['first'])}–{fmt_t(a['last'])})"]
-    if a.get("leave"):
-        lines.append(f"🌴 {leave_line(a)}")
+            rows.append("  • Khối tập trung: " + ", ".join(f"{fmt_t(b['start'])}–{fmt_t(b['end'])}" for b in a["blocks"]))
+        rows.append("  Ngày nghỉ bot chỉ cộng giờ làm trong VDI, không tính sao nhãng, không chấm điểm.")
+        return "\n".join(lines + _section("LÀM BÙ", rows) + note_lines(note)).rstrip()
     sc = scoring.total_score(a, note)
-    lines += [f"⭐ Điểm tổng: {sc['total']}/100 ({sc['ten']:.1f}/10) · quà robot {sc['tier']['grade']} {sc['tier']['name']}",
-              f"Tập trung sâu: {fmt_dur(a['deep'])} / mục tiêu {a['goal_h']:g}h · điểm tập trung {focus_score(a)}/100",
-              f"Trong VDI: {fmt_dur(a['vdi'])}"
-              + (f" · làm ngoài giờ (OT) {fmt_dur(a['ot'])}" if a.get("ot") else ""),
-              real_work_line(a),
-              f"Ngoài VDI: {fmt_dur(a['other'])} ({a['exits']} lần rời), thu nhỏ VDI {fmt_dur(a['minimized'])} "
-              f"({a.get('minimize_count', 0)} lần)",
-              f"Inactive phím/chuột: {fmt_dur(a['idle'])} ({a.get('short_idle_count', 0)} lần, TB "
-              f"{avg_dur(a['idle'], a.get('short_idle_count', 0))}) · ≥ 10 phút: {a.get('inactive_10m_count', 0)} lần",
-              f"Rời máy: {fmt_dur(a['away'])} ({a['away_count']} lần, TB {avg_dur(a['away'], a['away_count'])})",
-              f"Bị cắt ngang: {sc['per_hour']:g} lần/giờ làm"]
-    bd = breakdown_parts(a)
-    if bd:
-        lines.insert(len(lines) - 1, f"🧮 Cộng giờ làm: {bd[0]}\n   ({bd[1]})")  # ngay dưới các dòng giờ
-    lines += late_ot_texts(late or [])
-    if a.get("vdi_closed"):
-        lines.append("VDI đã đóng (rời VDI quá lâu): " + ", ".join(f"{fmt_t(x)}–{fmt_t(y)}" for x, y in a["vdi_closed"]))
+    mins = lambda sec: int(round((sec or 0) / 60))
+    lines = [head, f"Dữ liệu từ {fmt_t(a['first'])} đến {fmt_t(a['last'])}", RULE, ""]
+    if a.get("leave"):
+        lines += [leave_line(a), ""]
+
+    rows = [f"  • Điểm tổng: {sc['total']}/100 ({sc['ten']:.1f}/10)",
+            f"  • Quà robot: {sc['tier']['grade']} {sc['tier']['name']}",
+            f"  • Tập trung sâu: {fmt_dur(a['deep'])} / mục tiêu {a['goal_h']:g}h",
+            f"  • Điểm tập trung: {focus_score(a)}/100",
+            f"  • Bị cắt ngang: {sc['per_hour']:g} lần/giờ làm"]
     if streak_days is not None:
-        lines.append(f"Chuỗi ngày đạt mục tiêu: {streak_days} ngày" + (" 🔥" if streak_days >= 3 else ""))
+        rows.append(f"  • Chuỗi ngày đạt mục tiêu: {streak_days} ngày")
+    lines += _section("ĐIỂM", rows)
+
+    vdi_m, ot_m = mins(a.get("vdi")), mins(a.get("ot"))
+    rows = [f"  • Trong giờ làm: {fmt_dur(vdi_m * 60)}",
+            f"  • Làm ngoài giờ (OT): {fmt_dur(ot_m * 60)}" if ot_m else "  • Làm ngoài giờ (OT): chưa có"]
+    if ot_m:
+        rows.append("      OT tính cho đúng ngày làm (qua 00:00 là ngày mới)")
+    lines += _section(f"THỰC LÀM TRONG VDI: {fmt_dur((vdi_m + ot_m) * 60)}", rows)
+
+    b = time_breakdown(a, now)
+    h = a.get("hours") or {}
+    title = "GIỜ LÀM"
+    if h and not a.get("leave"):
+        title += f" {h['work_start']}–{h['work_end']} (trừ trưa {h['lunch_start']}–{h['lunch_end']})"
+    elif a.get("leave"):
+        title += " (đã trừ trưa và phần nghỉ phép)"
+    if b and b["until"]:
+        title += f", tính tới {b['until']}"
+    val = (lambda k: fmt_dur(b[k] * 60)) if b else (lambda k: fmt_dur(a.get(k, 0)))
+    rows = [f"  • Trong VDI: {val('vdi')}",
+            f"  • Ngoài VDI: {val('other')}",
+            f"      {a['exits']} lần rời; thu nhỏ VDI {fmt_dur(a['minimized'])} ({a.get('minimize_count', 0)} lần)"
+            + (", đã nằm trong ngoài VDI" if a.get("minimized") else ""),
+            f"  • Inactive phím/chuột: {val('idle')}",
+            f"      {a.get('short_idle_count', 0)} lần, TB {avg_dur(a['idle'], a.get('short_idle_count', 0))};"
+            f" ≥ 10 phút: {a.get('inactive_10m_count', 0)} lần",
+            f"  • Rời máy: {val('away')}",
+            f"      {a['away_count']} lần, TB {avg_dur(a['away'], a['away_count'])}"]
+    if b:
+        if b["unrecorded"]:
+            rows += [f"  • Không ghi: {fmt_dur(b['unrecorded'] * 60)}",
+                     "      tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm"]
+        rows += ["  ------------", f"  = Cộng giờ làm: {fmt_dur(b['total'] * 60)}"]
+        if ot_m:
+            rows += [f"  + OT (ngoài giờ làm): {fmt_dur(ot_m * 60)}", f"  = Tổng: {fmt_dur((b['total'] + ot_m) * 60)}"]
+    lines += _section(title, rows)
+
+    if late:
+        lines += _section("OT NGÀY TRƯỚC (đã cộng vào ngày đó, không cộng hôm nay)", _late_rows(late))
+
+    rows = []
+    if a.get("vdi_closed"):
+        rows.append("  • VDI đã đóng (rời VDI quá lâu): "
+                    + ", ".join(f"{fmt_t(x)}–{fmt_t(y)}" for x, y in a["vdi_closed"]))
     if a["blocks"]:
-        lines.append("Khối tập trung: " + ", ".join(
-            f"{fmt_t(b['start'])}–{fmt_t(b['end'])}" for b in a["blocks"]))
+        rows.append("  • Khối tập trung: " + ", ".join(f"{fmt_t(b['start'])}–{fmt_t(b['end'])}" for b in a["blocks"]))
     if note.get("as400_start"):
-        lines.append(f"AS400: {note['as400_start']}–{note.get('as400_end') or '?'}")
-    return "\n".join(lines + note_lines(note))
+        rows.append(f"  • AS400: {note['as400_start']}–{note.get('as400_end') or '?'}")
+    rows += [f"  • {x}" for x in note_lines(note) if not x.startswith("\n")]
+    if rows:
+        lines += _section("KHÁC", rows)
+    for x in note_lines(note):  # kế hoạch, output, issue: nguyên văn người dùng ghi, mỗi phần cách 1 dòng
+        if x.startswith("\n"):
+            lines += [x[1:], ""]
+    return "\n".join(lines).rstrip()
 
 
 def week_text(facts):

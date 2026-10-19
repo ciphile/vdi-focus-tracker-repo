@@ -96,8 +96,9 @@ class ReportTest(TempCase):
                      "Làm ngoài giờ (OT) 14 ngày gần nhất", "17:30–18:10"):
             self.assertIn(text, html)
         text = report.summary_text(a, {})
-        self.assertIn("⭐ Điểm tổng:", text)
-        self.assertIn("làm ngoài giờ (OT) 40m", text)
+        self.assertIn("  • Điểm tổng:", text)
+        self.assertIn("  • Làm ngoài giờ (OT): 40m", text)
+        self.assertNotIn("⭐", text)            # tin Telegram: không emoji
 
 
 class ExplainTest(TempCase):

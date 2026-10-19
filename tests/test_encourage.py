@@ -239,7 +239,7 @@ class WeekendOvertimeTest(TempCase):
         self.assertIn("Làm bù ngày nghỉ", week_text(f))
         a = analyze(self.bot.db, self.cfg, "2026-10-17")
         out = summary_text(a, {})
-        self.assertIn("ngày nghỉ (cuối tuần)", out)
+        self.assertIn("Ngày nghỉ (cuối tuần)", out)
         self.assertIn("Làm bù trong VDI: 50m", out)
         self.assertNotIn("Điểm tổng", out)
         self.assertEqual(a["other"], 0)

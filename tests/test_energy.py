@@ -143,7 +143,7 @@ class AutoEnergyBotTest(TempCase):
         self.bot.send_daily_summary(self.day)
         sent = self.api.sent()
         self.assertIn("🔋 Hôm nay bạn chưa chấm năng lượng", sent[0])
-        self.assertIn("Tổng kết", sent[1])
+        self.assertIn("TỔNG KẾT", sent[1])
         self.assertIn("Năng lượng bot tự tính", sent[1])
         note = self.note()
         self.assertEqual(note["energy_source"], "auto")

@@ -304,7 +304,7 @@ class BotTest(TempCase):
         self.bot.send_daily_summary(self.today)
         sent = self.api.sent()
         self.assertIn("🔋", sent[0], "chưa chấm năng lượng: báo số bot tự tính trước")
-        self.assertIn("Tổng kết", sent[1])
+        self.assertIn("TỔNG KẾT", sent[1])
         self.assertIn("/tmrtask", sent[1])
         self.assertTrue(any(m == "sendDocument" for m, p, f in self.api.calls))
         self.api.clear()

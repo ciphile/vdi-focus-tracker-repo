@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.8.1 (`focus/__init__.py`) |
+| Phiên bản | 2.9.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -817,33 +817,58 @@ Mỗi `sample_seconds` (5 giây) tracker lấy 1 mẫu: trạng thái VDI, tên 
 Tình huống: «/today»
 
 ```
-Tổng kết 2026-10-14 (08:02–19:40)
-⭐ Điểm tổng: 91/100 (9.1/10) · quà robot PG Celestial
-Tập trung sâu: 4h 05m / mục tiêu 4h · điểm tập trung 97/100
-Trong VDI: 5h 10m · làm ngoài giờ (OT) 40m
-💼 Thực làm trong VDI: 5h 50m (trong giờ 5h 10m + OT 40m)
-Ngoài VDI: 35m (9 lần rời), thu nhỏ VDI 12m (4 lần)
-Inactive phím/chuột: 26m (11 lần, TB 2m) · ≥ 10 phút: 0 lần
-Rời máy: 38m (3 lần, TB 13m)
-🧮 Cộng giờ làm: trong VDI 5h 10m + ngoài VDI 35m + inactive 26m + rời máy 38m + không ghi 56m = 7h 45m
-   (giờ làm 08:00–17:00 trừ trưa 11:15–12:30; thu nhỏ VDI 12m đã nằm trong ngoài VDI; không ghi = tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm)
-Bị cắt ngang: 3.5 lần/giờ làm
-Chuỗi ngày đạt mục tiêu: 3 ngày 🔥
-Khối tập trung: 08:05–09:50, 10:10–11:15, 13:00–14:35, 19:00–19:40
-Năng lượng tự chấm: 4/5
+TỔNG KẾT THỨ 4 14/10/2026
+Dữ liệu từ 08:02 đến 19:40
+------------------------------
+
+ĐIỂM
+------------------------------
+  • Điểm tổng: 91/100 (9.1/10)
+  • Quà robot: PG Celestial
+  • Tập trung sâu: 4h 05m / mục tiêu 4h
+  • Điểm tập trung: 97/100
+  • Bị cắt ngang: 3.5 lần/giờ làm
+  • Chuỗi ngày đạt mục tiêu: 3 ngày
+
+THỰC LÀM TRONG VDI: 5h 50m
+------------------------------
+  • Trong giờ làm: 5h 10m
+  • Làm ngoài giờ (OT): 40m
+      OT tính cho đúng ngày làm (qua 00:00 là ngày mới)
+
+GIỜ LÀM 08:00–17:00 (trừ trưa 11:15–12:30)
+------------------------------
+  • Trong VDI: 5h 10m
+  • Ngoài VDI: 35m
+      9 lần rời; thu nhỏ VDI 12m (4 lần), đã nằm trong ngoài VDI
+  • Inactive phím/chuột: 26m
+      11 lần, TB 2m; ≥ 10 phút: 0 lần
+  • Rời máy: 38m
+      3 lần, TB 13m
+  • Không ghi: 56m
+      tạm dừng /pause, tắt tracker, hoặc trước lần đầu / sau lần cuối dùng máy trong giờ làm
+  ------------
+  = Cộng giờ làm: 7h 45m
+  + OT (ngoài giờ làm): 40m
+  = Tổng: 8h 25m
+
+KHÁC
+------------------------------
+  • Khối tập trung: 08:05–09:50, 10:10–11:15, 13:00–14:35, 19:00–19:40
+  • Năng lượng tự chấm: 4/5
 
 Kế hoạch đầu ngày:
-1. Fix job đối soát, gửi anh A test
-2. Đọc spec API, góp ý qua email
+1. Fix job đối soát, gửi anh A test
+2. Đọc spec API, góp ý qua email
 
 Output:
-- fix job đối soát (10:30)
+- fix job đối soát (10:30)
 
 Issue:
-- VDI chậm (09:05)
+- VDI chậm (09:05)
 ```
 
-Dòng năng lượng, OT, VDI đã đóng và các ô kế hoạch / output / issue chỉ hiện khi có. Nhắn tự nhiên «hôm nay mình tập trung được bao nhiêu rồi», «xem kế hoạch hôm nay», «năng lượng hôm nay bao nhiêu» cũng ra kết quả này (bot in thêm dòng «🔎 Mình hiểu là: Tổng kết hôm nay (xem_hom_nay, lệnh /today)»).
+Tin Telegram chia mục (ĐIỂM, THỰC LÀM TRONG VDI, GIỜ LÀM, OT NGÀY TRƯỚC, KHÁC), mỗi mục có gạch ngang, bullet và thụt lề, không in đậm, không emoji (báo cáo HTML vẫn có màu và biểu tượng). Mục GIỜ LÀM cộng đúng giờ làm chính thức («= Cộng giờ làm»), có OT của chính ngày đó thì thêm «+ OT» và «= Tổng». Dòng năng lượng, OT, VDI đã đóng, mục OT NGÀY TRƯỚC và các ô kế hoạch / output / issue chỉ hiện khi có. Nhắn tự nhiên «hôm nay mình tập trung được bao nhiêu rồi», «xem kế hoạch hôm nay», «năng lượng hôm nay bao nhiêu» cũng ra kết quả này (bot in thêm dòng «🔎 Mình hiểu là: Tổng kết hôm nay (xem_hom_nay, lệnh /today)»).
 
 Xem lại ngày đã qua: kèm ngày sau lệnh.
 
@@ -1630,7 +1655,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.8.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.9.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -3402,7 +3427,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.8.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.9.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

@@ -1,4 +1,6 @@
 """2.6.2: báo cáo ngày cộng lại giờ làm: trong VDI + ngoài VDI + inactive + rời máy + không ghi = giờ làm chính thức."""
+import re
+
 from focus import report, report_html
 from focus.analysis import analyze, time_breakdown
 from focus.storage import db_path, open_db, save_note
@@ -35,13 +37,13 @@ class BreakdownTest(TempCase):
     def test_text_and_html_show_the_sum(self):
         a = analyze(self.db, self.cfg, TUE)
         text = report.summary_text(a, {})
-        self.assertIn("🧮 Cộng giờ làm: trong VDI", text)
-        self.assertIn("không ghi 10m = 7h 45m", text)
-        self.assertIn("giờ làm 08:00–17:00 trừ trưa 11:15–12:30", text)
-        self.assertIn("thu nhỏ VDI 1h 30m đã nằm trong ngoài VDI", text)
-        lines = text.splitlines()
-        self.assertLess(lines.index(next(x for x in lines if x.startswith("🧮"))),
-                        lines.index(next(x for x in lines if x.startswith("Bị cắt ngang"))))
+        self.assertIn("GIỜ LÀM 08:00–17:00 (trừ trưa 11:15–12:30)\n" + report.RULE, text)
+        self.assertIn("  • Trong VDI: 6h 05m\n  • Ngoài VDI: 1h 30m\n", text)
+        self.assertIn("  • Không ghi: 10m\n", text)
+        self.assertIn("  = Cộng giờ làm: 7h 45m", text)
+        self.assertIn("thu nhỏ VDI 1h 30m (1 lần), đã nằm trong ngoài VDI", text)
+        self.assertNotIn("+ OT", text)                              # không có OT: không có dòng cộng OT
+        self.assertIsNone(re.search("[\U0001F300-\U0001FAFF⭐]", text))   # tin Telegram: không emoji
         html = report_html.render_day(self.cfg, a, {}, [], {})
         self.assertIn("class='banner sum'", html)
         self.assertIn("= 7h 45m", html)
@@ -85,9 +87,11 @@ class RealWorkAndLateOtTest(TempCase):
         self.assertEqual(late[0]["day"], MON)
         self.assertEqual(round(late[0]["late"] / 60), 180)
         text = report.summary_text(analyze(self.db, self.cfg, TUE), {}, None, late)
-        self.assertIn("🌙 OT T2 12/10 sau giờ báo cáo: 3h 00m (19:00–22:00) → T2 12/10 thực làm trong VDI tổng 5h 00m",
-                      text)
-        self.assertIn("💼 Thực làm trong VDI: 1h 00m (chưa có OT)", text)   # hôm nay vẫn chỉ 1 giờ
+        self.assertIn("OT NGÀY TRƯỚC (đã cộng vào ngày đó, không cộng hôm nay)", text)
+        self.assertIn("  • OT T2 12/10 sau giờ báo cáo: 3h 00m (19:00–22:00)\n"
+                      "      T2 12/10 thực làm trong VDI tổng 5h 00m", text)
+        self.assertIn("THỰC LÀM TRONG VDI: 1h 00m\n", text)              # hôm nay vẫn chỉ 1 giờ
+        self.assertIn("Làm ngoài giờ (OT): chưa có", text)
         html = report_html.render_day(self.cfg, analyze(self.db, self.cfg, TUE), {}, [], {"late_ot": late})
         self.assertIn("thực làm trong VDI tổng 5h 00m", html)
         self.assertIn("không cộng vào hôm nay", html)
@@ -133,5 +137,6 @@ class SumWithOtTest(TempCase):
 
     def test_text_and_html(self):
         a = analyze(self.db, self.cfg, MON)
-        self.assertIn("+ OT 1h 19m (ngoài giờ làm) = 9h 04m", report.summary_text(a, {}))
+        self.assertIn("  = Cộng giờ làm: 7h 45m\n  + OT (ngoài giờ làm): 1h 19m\n  = Tổng: 9h 04m",
+                      report.summary_text(a, {}))
         self.assertIn("+ OT 1h 19m (ngoài giờ làm) = 9h 04m", report_html.render_day(self.cfg, a, {}, [], {}))
