@@ -17,6 +17,7 @@ Nhẹ máy:
   giờ thật (time.time) chỉ dùng làm mốc thời gian của mẫu.
 """
 import datetime as dt
+import json
 import logging
 import os
 import sys
@@ -30,7 +31,7 @@ from .logs import audit, get_logger
 from .notifier import Notifier
 from .probe import log_limited
 from .schedule import due_jobs, in_leave, in_run_window, is_work_time, offday_ot_due
-from .storage import SampleWriter, db_path, get_note, mark_sent, open_db
+from .storage import SampleWriter, db_path, get_note, get_pref, mark_sent, open_db, set_pref
 
 log = get_logger()
 
@@ -38,6 +39,7 @@ SLEEP_GAP_SECONDS = 120     # 2 mẫu cách nhau lâu hơn mức này = máy v�
 PERF_EVERY_SECONDS = 600
 MAX_CONSECUTIVE_ERRORS = 720  # ~1 giờ đọc lỗi liên tục thì dừng hẳn (log + audit CRASH)
 LOCK_WAIT_SECONDS = 120       # bản mới chờ bản cũ thoát (vd. Task Scheduler bật lại đúng lúc bản cũ đang tắt)
+ALERT_COUNTERS_KEY = "alert_day_counters"  # bảng prefs: bộ đếm sao nhãng hôm nay (giữ qua lần tắt/bật)
 MAX_PENDING_ROWS = 2000       # DB bận/đầy: giữ tối đa chừng này mẫu chưa ghi trong RAM (~2,8 giờ)
 
 
@@ -388,8 +390,29 @@ class Tracker:
         iso = now_dt.date().isocalendar()
         self.week_id = f"{iso[0]}-W{iso[1]:02d}"
 
+    def _load_alert_counters(self, today):
+        """Bật lại tracker giữa ngày: nạp bộ đếm sao nhãng đã lưu (số lần, số phút, số lần nhắc) để không đếm lại từ 1."""
+        self._alert_saved = None
+        try:
+            raw = get_pref(self.db, ALERT_COUNTERS_KEY)
+            if raw and self.alerts.restore_day(json.loads(raw), today):
+                self._alert_saved = self.alerts.day_counters()
+        except Exception as e:  # DB bận / dữ liệu hỏng: đếm lại từ đầu, vẫn theo dõi
+            log.warning("Không nạp được bộ đếm sao nhãng đã lưu: %s", e)
+
+    def _save_alert_counters(self):
+        data = self.alerts.day_counters()
+        if data is None or data == getattr(self, "_alert_saved", None):
+            return
+        try:
+            set_pref(self.db, ALERT_COUNTERS_KEY, json.dumps(data))
+            self._alert_saved = data
+        except Exception as e:  # DB bận: lần sau lưu lại
+            log.warning("Không lưu được bộ đếm sao nhãng: %s", e)
+
     def _finish_day(self, writer):
         """Chốt số liệu của self.day: ghi nốt mẫu trong RAM + tính daily_stats."""
+        self._save_alert_counters()
         try:
             writer.flush()
         except Exception as e:
@@ -434,6 +457,7 @@ class Tracker:
             audit("OUTSIDE_WINDOW", f"{hhmm} {cfg['auto_start_at']}-{cfg['auto_stop_at']}")
             return "outside_window"
         self.db = open_db(db_path(cfg))
+        self._load_alert_counters(now_dt.date())
         # Năm nay chưa có lịch lễ nào trên máy: tải MOM ngay (tối đa 1 lần/ngày) để không chạy nhầm ngày lễ.
         holidays.ensure_today_known(cfg, now_dt.date())
         kind, off = off_detail(self.db, cfg, self.day)
@@ -626,6 +650,8 @@ class Tracker:
                     work = is_work_time(cfg, hhmm, off, leave)
                     for kind, data in self.alerts.update(s, now, work, golden=in_golden(golden, hhmm)):
                         self.dispatch(kind, data, note)
+                    if ticks % 12 == 0:  # bộ đếm sao nhãng trong ngày: lưu mỗi phút (chỉ khi đổi)
+                        self._save_alert_counters()
                     if ticks % 6 == 0:  # việc theo giờ: kiểm tra mỗi 30 giây là đủ
                         active = not s["locked"] and s["idle"] < cfg["idle_threshold_seconds"]
                         self.run_jobs(hhmm, active, off, note, leave)

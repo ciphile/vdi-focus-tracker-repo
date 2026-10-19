@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.6.0 (`focus/__init__.py`) |
+| Phiên bản | 2.6.1 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -668,7 +668,7 @@ Hai file làm cùng một việc (gọi `python focus_tracker.py verify`) nhưng
 | Đổi giờ tự bật / tắt | Nhắn `/giobot` cho bot, không cần chạy lại file cài |
 | Đổi token / key / chat ID | Sửa `secrets.env`, rồi chạy `kiem_tra_may.bat check ai`, rồi khởi động lại tracker (dòng dưới) |
 | Sửa `persona.json` / `settings.json` | Lưu file, chạy `kiem_tra_may.bat check` (báo lỗi cú pháp nếu có), rồi khởi động lại tracker (dòng dưới) |
-| Khởi động lại tracker (để đọc lại file cấu hình) | Ctrl+Shift+Esc > tab *Details* > `python.exe` > *End task* (như dòng «Muốn xem log trực tiếp»), rồi nhấp đúp `start_tracker.vbs` (chạy ẩn) hoặc `start_tracker.bat` (có cửa sổ). Không gấp thì đợi tracker tự bật sáng hôm sau. Mac: nhấp đúp `go_tu_khoi_dong.command` rồi `cai_tu_khoi_dong.command` |
+| Khởi động lại tracker (để đọc lại file cấu hình) | Ctrl+Shift+Esc > tab *Details* > `python.exe` > *End task* (như dòng «Muốn xem log trực tiếp»), rồi nhấp đúp `start_tracker.vbs` (chạy ẩn) hoặc `start_tracker.bat` (có cửa sổ). Không gấp thì đợi tracker tự bật sáng hôm sau. Bật lại trong ngày thì số lần, số phút sao nhãng và số lần nhắc hôm nay được đếm tiếp (lưu vào DB mỗi phút), không về 0. Mac: nhấp đúp `go_tu_khoi_dong.command` rồi `cai_tu_khoi_dong.command` |
 | Citrix Workspace vừa cập nhật | `kiem_tra_may.bat vdi` (mục 4.2) |
 | Cài Python mới / gỡ Python cũ | `cai_tu_khoi_dong.bat` |
 | Dời thư mục app chỗ khác | `go_tu_khoi_dong.bat` ở chỗ cũ > dời thư mục > `cai_tu_khoi_dong.bat` ở chỗ mới |
@@ -1622,7 +1622,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.6.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.6.1
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -3392,7 +3392,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.6.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.6.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

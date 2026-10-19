@@ -69,6 +69,37 @@ class RealtimeAlerts:
         self.phone_alert_at = None    # chờ giữa 2 lần nhắc điện thoại: tính lại từ đầu mỗi ngày
         self.windowed_alerted = False  # gợi ý toàn màn hình: 1 lần MỖI NGÀY (tracker chạy qua đêm vẫn nhắc ngày mới)
 
+    def day_counters(self):
+        """Bộ đếm trong ngày để lưu vào DB: tắt tracker giữa ngày rồi bật lại vẫn đếm tiếp, không về 1.
+        Lần sao nhãng đang diễn ra (đã đủ 1 phút) được cộng luôn vào tổng phút. None khi chưa vào ngày nào."""
+        if self.date is None:
+            return None
+        ongoing = (self.out_last or 0) - self.out_since if self.out_since and self.out_counted else 0
+        return {"date": self.date.isoformat(), "episodes": self.day_episodes, "lost": int(self.day_lost + ongoing),
+                "nudges": self.day_nudges, "light_done": self.light_done, "phone": self.phone_today,
+                "windowed": self.windowed_alerted}
+
+    def restore_day(self, data, today):
+        """Nạp lại bộ đếm đã lưu nếu cùng ngày today (datetime.date). Dữ liệu ngày khác / hỏng thì bỏ qua.
+        Lần sao nhãng đang dở lúc tắt tracker coi như đã xong (số lần, số phút đã nằm trong bộ đếm)."""
+        try:
+            if not data or dt.date.fromisoformat(data["date"]) != today:
+                return False
+            self._new_day(today)
+            self.day_episodes = max(0, int(data["episodes"]))
+            self.day_lost = float(max(0, int(data["lost"])))
+            self.day_nudges = max(0, int(data["nudges"]))
+            self.light_done = bool(data["light_done"])
+            self.phone_today = max(0, int(data.get("phone", 0)))
+            self.windowed_alerted = bool(data.get("windowed", False))
+        except (KeyError, TypeError, ValueError) as e:
+            log.warning("Bộ đếm sao nhãng đã lưu không đọc được, đếm lại từ đầu: %s", e)
+            self._new_day(None)
+            return False
+        log.info("Nạp lại bộ đếm sao nhãng hôm nay: %d lần, %d phút, đã nhắc %d lần.",
+                 self.day_episodes, self.day_lost // 60, self.day_nudges)
+        return True
+
     def _end_episode(self, why):
         """Kết thúc lần sao nhãng đang diễn ra: cộng vào tổng trong ngày, xoá đồng hồ."""
         if self.out_since is not None:
