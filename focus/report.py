@@ -120,7 +120,7 @@ def late_ot_texts(rows):
     for r in rows:
         d = dt.date.fromisoformat(r["day"])
         name = f"{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][d.weekday()]} {d:%d/%m}"
-        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"])
+        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"] if fmt_t(s) != fmt_t(e))
         what = f"làm bù {name} ({r['off']})" if r["off"] else f"OT {name} sau giờ báo cáo"
         out.append(f"🌙 {what}: {fmt_dur(r['late'])}" + (f" ({ranges})" if ranges else "")
                    + f" → {name} thực làm trong VDI tổng {fmt_dur(r['total'])}")
@@ -131,7 +131,7 @@ def ot_label(row):
     """'T7 10/10 (cuối tuần): 2h 10m (09:05–11:20, 14:00–14:55)'"""
     d = dt.date.fromisoformat(row["day"])
     name = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"][d.weekday()]
-    ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in row["ranges"])
+    ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in row["ranges"] if fmt_t(s) != fmt_t(e))
     return (f"{name} {d:%d/%m}" + (f" ({row['off']})" if row["off"] else "") + f": {fmt_dur(row['ot'])}"
             + (f" ({ranges})" if ranges else ""))
 
@@ -295,7 +295,7 @@ def _late_rows(rows):
     for r in rows:
         d = dt.date.fromisoformat(r["day"])
         name = f"{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][d.weekday()]} {d:%d/%m}"
-        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"])
+        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"] if fmt_t(s) != fmt_t(e))
         what = f"Làm bù {name} ({r['off']})" if r["off"] else f"OT {name} sau giờ báo cáo"
         out.append(f"  • {what}: {fmt_dur(r['late'])}" + (f" ({ranges})" if ranges else ""))
         out.append(f"      {name} thực làm trong VDI tổng {fmt_dur(r['total'])}")
@@ -323,23 +323,28 @@ def summary_text(a, note, streak_days=None, late=None, now=None):
     if a.get("leave"):
         lines += [leave_line(a), ""]
 
-    rows = [f"  • Điểm tổng: {sc['total']}/100 ({sc['ten']:.1f}/10)",
+    b = time_breakdown(a, now)
+    rows = [f"  • Điểm tổng: {sc['total']}/100 ({sc['ten']:.1f}/10)"
+            + (f", tạm tính tới {b['until']}" if b and b["until"] else ""),
             f"  • Quà robot: {sc['tier']['grade']} {sc['tier']['name']}",
             f"  • Tập trung sâu: {fmt_dur(a['deep'])} / mục tiêu {a['goal_h']:g}h",
             f"  • Điểm tập trung: {focus_score(a)}/100",
             f"  • Bị cắt ngang: {sc['per_hour']:g} lần/giờ làm"]
     if streak_days is not None:
         rows.append(f"  • Chuỗi ngày đạt mục tiêu: {streak_days} ngày")
-    lines += _section("ĐIỂM", rows)
+    if b and b["until"] and a["deep"] < a["goal_h"] * 3600:
+        # 70% điểm tập trung so với mục tiêu CẢ NGÀY (4h tập trung sâu) nên giữa ngày điểm còn thấp là bình thường
+        rows.append(f"      Điểm so với mục tiêu cả ngày ({a['goal_h']:g}h tập trung sâu) nên giữa ngày còn thấp "
+                    "là bình thường; điểm chốt lúc tổng kết cuối ngày.")
+    lines += _section(f"ĐIỂM NGÀY {d:%d/%m}", rows)
 
     vdi_m, ot_m = mins(a.get("vdi")), mins(a.get("ot"))
     rows = [f"  • Trong giờ làm: {fmt_dur(vdi_m * 60)}",
             f"  • Làm ngoài giờ (OT): {fmt_dur(ot_m * 60)}" if ot_m else "  • Làm ngoài giờ (OT): chưa có"]
     if ot_m:
         rows.append("      OT tính cho đúng ngày làm (qua 00:00 là ngày mới)")
-    lines += _section(f"THỰC LÀM TRONG VDI: {fmt_dur((vdi_m + ot_m) * 60)}", rows)
+    lines += _section(f"THỰC LÀM TRONG VDI NGÀY {d:%d/%m}: {fmt_dur((vdi_m + ot_m) * 60)}", rows)
 
-    b = time_breakdown(a, now)
     h = a.get("hours") or {}
     title = "GIỜ LÀM"
     if h and not a.get("leave"):

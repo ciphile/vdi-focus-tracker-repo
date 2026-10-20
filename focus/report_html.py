@@ -613,7 +613,7 @@ def ot_section(hist):
     rows = []
     for r in hist["days"]:
         d = dt.date.fromisoformat(r["day"])
-        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"])
+        ranges = ", ".join(f"{fmt_t(s)}–{fmt_t(e)}" for s, e in r["ranges"] if fmt_t(s) != fmt_t(e))
         rows.append(f"<div class='orow'><b>{WEEKDAY_SHORT[d.weekday()]} {d:%d/%m}"
                     + (f" <small class='mut'>({esc(r['off'])})</small>" if r["off"] else "") + "</b>"
                     f"{track(r['ot'] / mx * 100, 'ot')}<span class='num' style='text-align:right'>{fmt_dur(r['ot'])}"

@@ -90,7 +90,7 @@ class RealWorkAndLateOtTest(TempCase):
         self.assertIn("OT NGÀY TRƯỚC (đã cộng vào ngày đó, không cộng hôm nay)", text)
         self.assertIn("  • OT T2 12/10 sau giờ báo cáo: 3h 00m (19:00–22:00)\n"
                       "      T2 12/10 thực làm trong VDI tổng 5h 00m", text)
-        self.assertIn("THỰC LÀM TRONG VDI: 1h 00m\n", text)              # hôm nay vẫn chỉ 1 giờ
+        self.assertIn("THỰC LÀM TRONG VDI NGÀY 13/10: 1h 00m\n", text)              # hôm nay vẫn chỉ 1 giờ
         self.assertIn("Làm ngoài giờ (OT): chưa có", text)
         html = report_html.render_day(self.cfg, analyze(self.db, self.cfg, TUE), {}, [], {"late_ot": late})
         self.assertIn("thực làm trong VDI tổng 5h 00m", html)
@@ -140,3 +140,28 @@ class SumWithOtTest(TempCase):
         self.assertIn("  = Cộng giờ làm: 7h 45m\n  + OT (ngoài giờ làm): 1h 19m\n  = Tổng: 9h 04m",
                       report.summary_text(a, {}))
         self.assertIn("+ OT 1h 19m (ngoài giờ làm) = 9h 04m", report_html.render_day(self.cfg, a, {}, [], {}))
+
+
+class ProvisionalScoreTest(TempCase):
+    """2.10.1: giữa ngày điểm ghi «tạm tính» và giải thích vì sao đầu ngày điểm thấp; khoảng OT < 1 phút không in."""
+
+    def test_mid_day_score_is_marked_provisional(self):
+        db = open_db(db_path(self.cfg))
+        insert_run(db, TUE, "08:00", 5)
+        insert_run(db, TUE, "08:05", 10, vdi="minimized")
+        with db:
+            db.execute("DELETE FROM samples WHERE ts > ?", (ts(TUE, "08:19"),))
+        a = analyze(db, self.cfg, TUE)
+        text = report.summary_text(a, {}, now=ts(TUE, "08:19"))
+        self.assertIn(", tạm tính tới 08:19", text)
+        self.assertIn("ĐIỂM NGÀY 13/10\n", text)
+        self.assertIn("giữa ngày còn thấp là bình thường", text)
+        done = report.summary_text(a, {}, now=ts(TUE, "20:00"))
+        self.assertNotIn("tạm tính", done)
+
+    def test_sub_minute_ot_range_hidden(self):
+        r = {"day": MON, "off": None, "late": 600, "total": 3600,
+             "ranges": [(ts(MON, "18:36") + 5, ts(MON, "18:36") + 40), (ts(MON, "20:37"), ts(MON, "20:47"))]}
+        line = report.late_ot_texts([r])[0]
+        self.assertIn("(20:37–20:47)", line)
+        self.assertNotIn("18:36", line)
