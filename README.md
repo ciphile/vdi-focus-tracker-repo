@@ -1236,6 +1236,19 @@ VDI ở trước mà không gõ (họp chỉ nghe) thì tin có thêm «(Đang h
 🖥️ Bạn đã làm 15 phút trong VDI mà VDI không toàn màn hình. Phóng to VDI trên một màn hình, để Chrome/Zalo ở màn hình kia hoặc tắt hẳn: ít thấy thì ít bấm.
 ```
 
+Ví dụ nhắc cất điện thoại (mặc định 3 lần trong 30 phút). Bot chỉ tính quãng ngồi yên khi **VDI đang ở trước mặt**:
+
+```
+08:40:15 – 08:41:59  VDI ở trước, không chạm phím/chuột 1 phút 44 giây, rồi gõ tiếp   -> lần 1
+08:43:45 – 08:45:29  VDI ở trước, ngồi yên 1 phút 44 giây, rồi gõ tiếp                -> lần 2
+08:45:34 – 08:47:44  VDI thu nhỏ, đang dùng Notepad++                                -> không tính (đã có nhắc sao nhãng riêng)
+08:51:20 – 08:52:19  ngồi yên 59 giây                                                 -> không tính (dưới 1 phút)
+08:55:50 – 08:57:34  VDI ở trước, ngồi yên 1 phút 44 giây, rồi gõ tiếp                -> lần 3
+08:57:44             đủ 3 lần trong 30 phút -> bot gửi tin 📱 ở trên, đếm lại từ 0
+```
+
+Quãng ngồi yên từ 5 phút trở lên là «rời máy» (mục 4.4), không tính vào nhắc này. Bot không phân biệt được bạn đang cầm điện thoại hay đang đọc code trên màn hình VDI. Nếu bị nhắc nhiều khi đọc code, tăng số lần trong `config/settings.json`, ví dụ `"phone_pattern_count": 7` = 7 lần trong 30 phút mới nhắc (lưu file rồi tắt và bật lại tracker). `0` = tắt hẳn.
+
 ### 4.6 Cảnh báo tiến độ (`/pace`)
 
 So **giờ làm thật trong VDI** hôm nay với nhịp cần để đạt `pace_target_vdi_hours` (6h) trước `work_end`, không gợi ý làm thêm giờ.
