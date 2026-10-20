@@ -111,7 +111,7 @@ class OfflineVarietyTest(TempCase):
                 self.assertGreaterEqual(len(lines), need, (kind, tone))   # câu nhắc VDI còn có 20 câu/ô bên NUDGE
                 self.assertEqual(len(set(lines)), len(lines), (kind, tone))
                 for line in lines:
-                    self.assertNotIn("{", line.format(u="x", U="X", me="y", Me="Y", boss="z"))
+                    self.assertNotIn("{", line.format(u="x", U="X", me="y", Me="Y", boss="z", m=25))
                     if tone == "sep_kho_tinh":
                         self.assertIsNone(EMOJI.search(line), line)
 
@@ -164,3 +164,30 @@ class WaterVarietyTest(TempCase):
             self.assertNotIn("{", "\n".join(m))
         boss = [messages.water({}, dict(p, giong="sep_kho_tinh")).splitlines()[0] for _ in range(12)]
         self.assertTrue(all(EMOJI.search(x) is None for x in boss))
+
+
+class BackAndPaceVarietyTest(TempCase):
+    """Tin quay lại sau khi rời máy và tin chậm tiến độ: đổi câu theo giọng bot, luân phiên, cùng một ý."""
+
+    def test_back_rotates_per_tone_with_minutes(self):
+        for tone in persona.TONES:
+            p = dict(persona.DEFAULT, giong=tone, goi_nguoi_dung="bờ rồ")
+            seen = [messages.back({"minutes": 25}, p) for _ in range(7)]
+            self.assertEqual(len(set(seen)), 7, tone)                 # 7 câu khác nhau rồi mới lặp
+            self.assertTrue(all("25 phút" in x for x in seen), tone)  # luôn có số phút
+            if tone == "sep_kho_tinh":
+                self.assertTrue(all(EMOJI.search(x) is None for x in seen))
+
+    def test_strict_pace_varies_lead_and_closing_line(self):
+        info = {"at": "15:30", "actual_h": 1.65, "expected_h": 4.57, "target_h": 6, "end": "17:30",
+                "behind_h": 2.9, "remaining_min": 120, "need_per_hour": 80, "left_h": 4.35}
+        for tone in persona.TONES:
+            p = dict(persona.DEFAULT, giong=tone, goi_nguoi_dung="bờ rồ")
+            firsts, lasts = set(), set()
+            for _ in range(7):
+                text = messages.pace_behind(info, p, level="nghiem")
+                lines = text.splitlines()
+                firsts.add(lines[0])
+                lasts.add(lines[-1])
+            self.assertEqual(len(firsts), 7, tone)
+            self.assertEqual(len(lasts), 7, tone)

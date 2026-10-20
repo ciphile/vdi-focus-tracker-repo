@@ -95,39 +95,39 @@ LEADS = {
         "than_mat": ["{U} ơi, xem nhanh tiến độ hôm nay nè.", "{U} ơi, hôm nay hơi chậm chút, mình bắt nhịp lại nhé.",
                      "Còn kịp mà {u}, vào VDI làm thêm một mạch nha.", "Nhìn số giờ một chút nè {u}, mình cố thêm tí nhé.",
                      "{U} ơi, mình đang hơi tụt so với mục tiêu, làm tiếp nhé.",
-                     "Từ giờ tới chiều vẫn đủ thời gian đó {u}, bắt đầu luôn nha."],
+                     "Từ giờ tới chiều vẫn đủ thời gian đó {u}, bắt đầu luôn nha.", "{U} ơi, mình làm thêm một mạch trong VDI cho kịp nha.", "Chưa muộn đâu {u}, tập trung lại một chút là kịp."],
         "vui_tuoi": ["Tăng tốc chút nào {u}! Vẫn kịp về đúng giờ nếu bắt đầu ngay 💪",
                      "Lên dây cót nào {u}! Một mạch nữa là đẹp ngay 🚀",
                      "Đạp ga nhẹ thôi {u}, mục tiêu còn trong tầm tay nè 🏁",
                      "Cố lên {u} ơi! Mỗi phút trong VDI đều được tính nha ✨",
-                     "Bật chế độ chiến binh nào {u}! ⚔️", "Vào guồng lại thôi {u}, mình tin {u} mà 🌟"],
+                     "Bật chế độ chiến binh nào {u}! ⚔️", "Vào guồng lại thôi {u}, mình tin {u} mà 🌟", "Còn nước còn tát {u} ơi, chiến tiếp nào! 🌊", "Một chút nỗ lực nữa thôi {u}, về đích đẹp luôn! 🏆"],
         "hai_huoc": ["Đồng hồ chạy nhanh hơn {u} rồi đó, rượt theo thôi 🏃",
                      "Tiến độ hôm nay đang đi xe đạp, mục tiêu thì đi máy bay ✈️",
                      "Số giờ tập trung đang ăn kiêng hơi quá tay rồi {u} 🥗",
                      "Mục tiêu hôm nay vừa hỏi {me}: ‘ủa {u} đâu rồi?’ 🤔",
                      "Biểu đồ hôm nay phẳng như mặt hồ, khuấy lên chút đi {u} 🌊",
-                     "Rùa vẫn thắng thỏ, nhưng rùa không lướt điện thoại nha {u} 🐢"],
+                     "Rùa vẫn thắng thỏ, nhưng rùa không lướt điện thoại nha {u} 🐢", "Kim đồng hồ chạy marathon, {u} đang đi dạo công viên 🏃", "Mục tiêu hôm nay đang ngồi chờ {u} mòn ghế 🪑"],
         "sep_kho_tinh": ["Tiến độ chậm.", "Số giờ làm hôm nay chưa đạt.", "Chưa đủ giờ. Làm tiếp.",
-                         "Tôi thấy số liệu rồi. Chưa ổn.", "Hôm nay đang dưới mục tiêu.", "Cần thêm giờ trong VDI."],
+                         "Tôi thấy số liệu rồi. Chưa ổn.", "Hôm nay đang dưới mục tiêu.", "Cần thêm giờ trong VDI.", "Đang chậm so với kế hoạch.", "Cần tăng tốc. Ngay."],
     },
     "pace_behind_nghiem": {
         "than_mat": ["{U}, nói thẳng: hôm nay đang chậm nhiều, phải dồn sức ngay.",
                      "{U} ơi, chậm nhiều rồi, mình tập trung hết sức từ giờ nhé.",
                      "Nói thật lòng nha {u}: phải làm liền mới kịp.", "{U}, gác việc phụ lại, vào VDI làm ngay nhé.",
                      "Hôm nay thiếu nhiều đó {u}, mình dốc sức ngay bây giờ nha.",
-                     "{U} ơi, không chần chừ thêm nữa nhé, bắt đầu luôn."],
+                     "{U} ơi, không chần chừ thêm nữa nhé, bắt đầu luôn.", "{U}, chậm khá nhiều rồi, mình dốc sức từ bây giờ tới cuối giờ nhé.", "Nói thật nha {u}: còn ngồi ngoài là không kịp, vào VDI liền nhé."],
         "vui_tuoi": ["Báo động đỏ {u}! Chậm tiến độ rồi, vào VDI chiến ngay!", "Còi báo động réo rồi {u}! Lao vào VDI nào! 🚨",
                      "Không còn thời gian dạo chơi đâu {u}, chiến ngay! 🔥", "Tăng tốc tối đa nào {u}, ngay và luôn! 🏎️",
-                     "Giờ vàng còn ít lắm {u} ơi, vào VDI liền! ⏰", "Tất tay luôn {u}! Vào VDI làm cho xong nào! 💥"],
+                     "Giờ vàng còn ít lắm {u} ơi, vào VDI liền! ⏰", "Tất tay luôn {u}! Vào VDI làm cho xong nào! 💥", "Hết giờ khởi động rồi {u}, vào trận thật thôi! ⚽", "Báo động cam {u} ơi! Gom hết sức vào VDI nào! 🔥"],
         "hai_huoc": ["Tiến độ đang đi bộ, deadline đang chạy xe máy. {U} vào VDI ngay!",
                      "Năng suất hôm nay của {u} vừa nhập viện, tình trạng nguy kịch 🏥",
                      "{Me} đã chuẩn bị sẵn điếu văn cho mục tiêu hôm nay rồi, cứu nó đi {u} 🕯️",
                      "Deadline đang mài dao trong góc phòng đó {u} 🔪",
                      "Báo cáo cuối ngày của {u} đang viết thư xin nghỉ việc 💌",
-                     "Biểu đồ hôm nay đang hấp hối, hô hấp nhân tạo bằng VDI ngay {u} 🚑"],
+                     "Biểu đồ hôm nay đang hấp hối, hô hấp nhân tạo bằng VDI ngay {u} 🚑", "Deadline vừa gửi lời hỏi thăm sức khoẻ {u} đó, hơi rùng mình 👻", "Tốc độ hôm nay mà đi thi chắc về sau con ốc sên 🐌"],
         "sep_kho_tinh": ["Chậm quá. Không có lý do. Làm ngay.", "Thế này thì tối nay ngồi lại. Muốn vậy không?",
                          "Tôi không chấp nhận số liệu này.", "Còn thiếu nhiều. Không nghỉ nữa.",
-                         "Cuối ngày tôi hỏi. Chuẩn bị câu trả lời.", "Làm cho đủ. Không thương lượng."],
+                         "Cuối ngày tôi hỏi. Chuẩn bị câu trả lời.", "Làm cho đủ. Không thương lượng.", "Tụt quá xa. Làm việc.", "Hết thời gian lãng phí. VDI. Ngay."],
     },
     "pace_praise": {
         "than_mat": ["Giỏi lắm {u}, đang đúng nhịp.", "Ổn áp lắm {u}, cứ giữ vậy nha.", "{U} làm tốt lắm, tiếp tục nhé.",
@@ -139,6 +139,62 @@ LEADS = {
                      "{Me} chưa kịp nhắc mà {u} đã làm xong, thất nghiệp tới nơi 😅", "KPI hôm nay xin chữ ký {u} đó ✍️"],
         "sep_kho_tinh": ["Được. Giữ vậy.", "Đúng tiến độ. Tiếp tục.", "Tạm ổn. Đừng chủ quan.", "Vậy là được. Làm tiếp.",
                          "Đạt. Giữ nhịp này.", "Không có gì để nói. Tiếp tục."],
+    },
+    # Quay lại sau khi rời máy ({m} = số phút đã rời máy).
+    "back": {
+        "than_mat": ["Chào mừng quay lại. {U} rời máy {m} phút. Vào VDI làm tiếp nhé.",
+                     "{U} về rồi đó hả, đi {m} phút rồi. Mở VDI làm tiếp nha.",
+                     "Mừng {u} quay lại sau {m} phút. Mình làm tiếp thôi.",
+                     "{U} vắng {m} phút rồi đó. Ngồi xuống, mở VDI làm tiếp nhé.",
+                     "Có {u} rồi. {m} phút vừa qua coi như nghỉ, giờ vào việc lại nha.",
+                     "{U} ơi, rời máy {m} phút rồi. Uống ngụm nước rồi vào VDI nhé.",
+                     "Quay lại rồi thì tốt. {m} phút đó đủ nghỉ rồi, làm tiếp nha {u}."],
+        "vui_tuoi": ["Yay, {u} về rồi! Vắng {m} phút đó, vào VDI quẩy tiếp nào! 🎉",
+                     "{U} trở lại rồi kìa! {m} phút xa cách, VDI nhớ {u} lắm đó 💙",
+                     "Chào mừng {u} quay về sau {m} phút! Lên dây cót làm tiếp nha 🚀",
+                     "A, {u} đây rồi! Nghỉ {m} phút xong, giờ chiến tiếp thôi 💪",
+                     "{U} về rồi, bàn làm việc sáng bừng luôn! Đi {m} phút rồi, vào VDI nhé ✨",
+                     "Welcome back {u}! {m} phút nạp pin xong, bắt đầu hiệp mới nào 🔋",
+                     "{U} quay lại rồi! Vắng {m} phút, giờ vào guồng lại liền nha 🌟"],
+        "hai_huoc": ["Ơ, {u} đã trở về sau {m} phút phiêu lưu 🧭 Vào VDI kể chuyện tiếp đi.",
+                     "Đội tìm kiếm cứu nạn xin rút quân: {u} đã về sau {m} phút 🚁",
+                     "{U} biến mất {m} phút, {me} suýt dán thông báo tìm người 📢",
+                     "Chuyến du hành {m} phút của {u} kết thúc. Mời về lại VDI 🛬",
+                     "Ghế đã giữ chỗ cho {u} suốt {m} phút, giờ thì ngồi xuống làm tiếp 🪑",
+                     "{m} phút vắng mặt, {u} đi đâu mà lâu thế, đi chợ à? 🛒 Vào VDI thôi.",
+                     "{U} về rồi! {me} hủy lệnh truy nã sau {m} phút 🕵️ Làm tiếp nha."],
+        "sep_kho_tinh": ["Rời máy {m} phút. Vào VDI làm tiếp.", "Đã quay lại. {m} phút. Làm việc.",
+                         "Vắng {m} phút. Đủ rồi. VDI.", "Quay lại sau {m} phút. Tiếp tục công việc.",
+                         "{m} phút không làm việc. Bù lại đi.", "Về chỗ rồi thì làm ngay. Đã mất {m} phút.",
+                         "Rời bàn {m} phút. Không lặp lại."],
+    },
+    # Câu chốt của cảnh báo tiến độ mức nghiêm (/nudge nghiem), cùng một ý: đóng app khác, VDI toàn màn hình, làm ngay.
+    "pace_hard": {
+        "than_mat": ["Nói thẳng: đóng hết app khác, mở VDI toàn màn hình và làm ngay bây giờ.",
+                     "Mình nói thật nha: tắt bớt app khác, phóng to VDI và làm liền nhé.",
+                     "Giờ là lúc gác hết mọi thứ khác, VDI toàn màn hình, làm một mạch nhé.",
+                     "Đóng bớt các app khác một lúc, mở to VDI và tập trung nhé.",
+                     "Thật lòng khuyên {u}: chỉ để VDI trên màn hình, còn lại tắt hết, làm ngay.",
+                     "Tắt hết thông báo, VDI toàn màn hình, bắt đầu luôn nha {u}.",
+                     "Dọn màn hình cho gọn: chỉ còn VDI, rồi làm ngay nhé."],
+        "vui_tuoi": ["Dọn sạch màn hình, chỉ chừa VDI, chiến liền nào! 🧹",
+                     "Tắt hết app phụ, VDI full màn hình, lên đồ đi {u}! ⚔️",
+                     "Chế độ tập trung bật! Chỉ VDI thôi, làm ngay nha 🔦",
+                     "Bye bye app khác, hello VDI toàn màn hình! Làm liền nha 👋",
+                     "Đóng tab, phóng to VDI, bắt đầu luôn {u} ơi! 🚀",
+                     "Một màn hình, một VDI, một {u} siêu tập trung! Go! 🎯",
+                     "Gom hết sức vào VDI toàn màn hình nha {u}! 💥"],
+        "hai_huoc": ["Đóng hết app khác như đóng cửa nhà khi có chủ nợ tới, chỉ mở VDI thôi 🚪",
+                     "Màn hình bây giờ chỉ được có một ngôi sao: VDI toàn màn hình 🌟",
+                     "Các app khác vui lòng ra ngoài chờ, VDI đang có ca trực 🩺",
+                     "Tắt hết app phụ đi {u}, cho VDI làm diễn viên chính 🎬",
+                     "Phóng to VDI như phóng to ảnh crush, rồi làm ngay 🔍",
+                     "Các app khác tạm thời bị cấm túc. VDI toàn màn hình, làm luôn 🔒",
+                     "Đóng hết, để VDI một mình một cõi, làm như chưa từng được làm 🏔️"],
+        "sep_kho_tinh": ["Không bàn thêm. Đóng mọi app khác, VDI toàn màn hình, làm ngay.",
+                         "Tắt hết app khác. VDI toàn màn hình. Bắt đầu.", "Chỉ VDI. Không gì khác. Làm.",
+                         "Đóng app phụ. Phóng to VDI. Ngay bây giờ.", "Dừng mọi thứ khác. Làm việc chính.",
+                         "Màn hình chỉ có VDI. Không ngoại lệ.", "Tập trung. VDI toàn màn hình. Hết."],
     },
     # Nhắc sức khoẻ (/break, /water): không phụ thuộc mức nhắc sao nhãng.
     "break": {
@@ -352,19 +408,20 @@ def _rotate(key, options):
     return pick
 
 
-def lead_from(key, options, p):
-    """Câu mở đầu luân phiên trong options (đã điền cách xưng hô). "" nếu không có câu nào."""
+def lead_from(key, options, p, **extra):
+    """Câu mở đầu luân phiên trong options (đã điền cách xưng hô và các số trong extra, ví dụ {m} phút).
+    "" nếu không có câu nào."""
     if not options:
         return ""
     return _rotate(key, options).format(u=p["goi_nguoi_dung"], U=_cap(p["goi_nguoi_dung"]),
-                                        me=p["bot_xung"], Me=_cap(p["bot_xung"]), boss=p["ten_sep"])
+                                        me=p["bot_xung"], Me=_cap(p["bot_xung"]), boss=p["ten_sep"], **extra)
 
 
-def lead(kind, p):
+def lead(kind, p, **extra):
     """Câu mở đầu theo giọng cho một loại cảnh báo, luân phiên không lặp ("" nếu không có)."""
     if kind == "boss" and not p["ten_sep"]:
         return ""
-    return lead_from((kind, p["giong"]), LEADS.get(kind, {}).get(p["giong"]) or [], p)
+    return lead_from((kind, p["giong"]), LEADS.get(kind, {}).get(p["giong"]) or [], p, **extra)
 
 
 def nudge_lead(kind, level, p):

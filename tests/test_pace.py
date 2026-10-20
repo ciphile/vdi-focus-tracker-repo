@@ -112,11 +112,13 @@ class WordingTest(unittest.TestCase):
                     self.assertIn("Chậm 1h41", t)
                     self.assertIn("Còn 3h00 giờ làm", t)
                     texts.add(t.splitlines()[0])
-                    if level == "nghiem":
-                        self.assertRegex(t, "Không bàn thêm|đóng hết app khác")
+                    if level == "nghiem":   # câu chốt gắt: một trong các câu pace_hard của giọng đó
+                        hard = [x.format(u="bạn", U="Bạn", me="mình", Me="Mình", boss="")
+                                for x in persona.LEADS["pace_hard"][tone]]
+                        self.assertIn(t.splitlines()[-1], hard)
         self.assertEqual(len(texts), 8, "mỗi giọng x mức có câu mở đầu riêng")
         boss = messages.pace_behind(self.info, dict(persona.DEFAULT, giong="sep_kho_tinh"), "nghiem")
-        self.assertIn("Không bàn thêm", boss)
+        self.assertIn(boss.splitlines()[-1], persona.LEADS["pace_hard"]["sep_kho_tinh"])
 
     def test_praise_per_tone(self):
         info = pace.status(self.cfg, 4 * 3600, "14:00")
@@ -167,7 +169,9 @@ class TrackerPaceTest(T._Base):
 
     def test_strict_level_is_harsher(self):
         bot, nt, sent = self.run_day(BEHIND_DAY, stop="14:10", nudge_level="nghiem")
-        self.assertRegex(sent[0], "Không bàn thêm|đóng hết app khác")
+        hard = [x.format(u="bạn", U="Bạn", me="mình", Me="Mình", boss="")
+                for t in persona.LEADS["pace_hard"].values() for x in t]
+        self.assertIn(sent[0].splitlines()[-1], hard)
 
     def test_nudge_off_does_not_disable_pace(self):
         bot, nt, sent = self.run_day(BEHIND_DAY, stop="14:10", nudge_level="off")

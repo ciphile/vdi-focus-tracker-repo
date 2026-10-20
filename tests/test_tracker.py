@@ -15,7 +15,7 @@ try:                      # Windows không có module resource
 except ImportError:
     resource = None
 
-from focus import holidays, logs, tracker
+from focus import holidays, logs, persona, tracker
 from focus.analysis import analyze, daily_stats
 from focus.storage import db_path, open_db, save_note
 from focus.tracker import InstanceLock, Tracker
@@ -308,7 +308,9 @@ class FullDayTest(_Base):
         self.assertEqual(len(away), 1)
         self.assertIn("Máy đang khoá.", away[0])
         self.assertIn("từ 10:29", away[0])
-        self.assertTrue(any("Chào mừng quay lại" in t and "20 phút" in t for t in texts))
+        backs = [x.format(u="bạn", U="Bạn", me="mình", Me="Mình", boss="", m=20)
+                 for t in persona.LEADS["back"].values() for x in t]
+        self.assertTrue(any(t in backs for t in texts))           # tin quay lại (câu theo giọng, có 20 phút)
         self.assertEqual(sum("tập trung liên tục" in t for t in texts), 4)
         self.assertEqual(sum("📱" in t for t in texts), 1)
         self.assertEqual(sum("🖥️" in t for t in texts), 1)

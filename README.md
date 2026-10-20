@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.10.2 (`focus/__init__.py`) |
+| Phiên bản | 2.10.3 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1158,7 +1158,7 @@ Sao nhãng = đang dùng phím/chuột nhưng VDI không ở trước (app khác
 
 Kèm một câu khích lệ (AI nếu có, tắt bằng `/encourage off`): mức vừa từ lần nhắc thứ 2 trong ngày; mức nghiêm ở lần nhắc lại đầu tiên của mỗi lần sao nhãng; mức nhẹ không. Lần nhắc thứ 2 trở đi của cùng một lần sao nhãng có thêm câu "doạ nhẹ" nhắc tên sếp (nếu `ten_sep` có trong persona). Có kế hoạch hôm nay thì thêm dòng «Quay lại: <việc đầu tiên>».
 
-**Câu mở đầu tin nhắc** viết sẵn (không gọi AI), theo ma trận **mức nhắc × giọng bot**: 3 mức (nhẹ / vừa / nghiêm) × 4 giọng (`than_mat`, `vui_tuoi`, `hai_huoc`, `sep_kho_tinh`, đổi bằng `/style`) = 12 ô, mỗi ô 20 câu (file `focus/nudge_lines.py`), cộng vài câu riêng cho trường hợp VDI thu nhỏ / đang dùng app khác (`focus/persona.py`, `LEADS`). Bot luân phiên: dùng hết các câu trong ô rồi mới lặp lại, vòng mới không lặp ngay câu vừa gửi. Câu doạ nhẹ nhắc tên sếp cũng luân phiên (6 câu mỗi giọng). Giọng sếp khó tính không có emoji. Muốn thêm câu: thêm vào đúng ô trong `focus/nudge_lines.py`, giữ `{u}` (cách gọi), `{U}` (viết hoa đầu câu), `{me}` / `{Me}` (bot tự xưng). Giọng hài hước + mức nghiêm có thêm vài câu hài hơi "đen" (kiểu "tưởng bị táo bón nặng"); các giọng khác không có. Các tin khác (rời máy, nghỉ chân, uống nước, tiến độ) cũng có 6 câu mỗi giọng và luân phiên. Tất cả viết sẵn nên **AI rớt mạng vẫn đổi câu**; câu khích lệ và lời chào sáng khi AI lỗi cũng chọn ngẫu nhiên trong danh sách có sẵn.
+**Câu mở đầu tin nhắc** viết sẵn (không gọi AI), theo ma trận **mức nhắc × giọng bot**: 3 mức (nhẹ / vừa / nghiêm) × 4 giọng (`than_mat`, `vui_tuoi`, `hai_huoc`, `sep_kho_tinh`, đổi bằng `/style`) = 12 ô, mỗi ô 20 câu (file `focus/nudge_lines.py`), cộng vài câu riêng cho trường hợp VDI thu nhỏ / đang dùng app khác (`focus/persona.py`, `LEADS`). Bot luân phiên: dùng hết các câu trong ô rồi mới lặp lại, vòng mới không lặp ngay câu vừa gửi. Câu doạ nhẹ nhắc tên sếp cũng luân phiên (6 câu mỗi giọng). Giọng sếp khó tính không có emoji. Muốn thêm câu: thêm vào đúng ô trong `focus/nudge_lines.py`, giữ `{u}` (cách gọi), `{U}` (viết hoa đầu câu), `{me}` / `{Me}` (bot tự xưng). Giọng hài hước + mức nghiêm có thêm vài câu hài hơi "đen" (kiểu "tưởng bị táo bón nặng"); các giọng khác không có. Các tin khác (rời máy, nghỉ chân, uống nước, tiến độ) cũng có 6 câu mỗi giọng và luân phiên. Tin quay lại sau khi rời máy: 7 câu mỗi giọng. Tin chậm tiến độ: câu mở 8 câu mỗi giọng; mức nghiêm thêm câu chốt «đóng app khác, VDI toàn màn hình, làm ngay» viết 7 kiểu mỗi giọng. Tất cả viết sẵn nên **AI rớt mạng vẫn đổi câu**; câu khích lệ và lời chào sáng khi AI lỗi cũng chọn ngẫu nhiên trong danh sách có sẵn.
 
 Ví dụ một ngày (kiểm bằng `tests/test_nudge_levels.py`): 08:30–08:50 Chrome 20' · 09:10–09:28 VDI thu nhỏ 18' · 09:38 Chrome 8' · 09:56 Chrome 7' rồi khoá máy 30', mở lại Chrome 10' · 10:53 giờ vàng Chrome 6'.
 
@@ -1210,7 +1210,7 @@ Nhắc sau 5 phút, còn ở ngoài thì 5 phút nhắc lại, kèm số lần s
 | | |
 |---|---|
 | Nhắc khi | Không chạm phím/chuột (hoặc khoá máy) liên tục `away_alert_minutes` (15) phút trong giờ làm. Tính từ lần chạm cuối, không sớm hơn lúc vào giờ làm / máy thức dậy. Chạm lẻ một lần rồi lại ngồi yên (mục 4.1) không làm đồng hồ về 0 |
-| Quay lại | Chạm phím/chuột ở 2 mẫu 5 giây liền nhau (hoặc mở khoá máy) sau khi đã bị nhắc; chạm lẻ một lần thì chưa báo: «Chào mừng quay lại. Bạn rời máy 32 phút. Vào VDI làm tiếp nhé.» |
+| Quay lại | Chạm phím/chuột ở 2 mẫu 5 giây liền nhau (hoặc mở khoá máy) sau khi đã bị nhắc; chạm lẻ một lần thì chưa báo. Câu chào theo giọng bot, mỗi giọng 7 câu cùng ý, luân phiên, luôn có số phút đã rời máy, ví dụ «Chào mừng quay lại. Bạn rời máy 32 phút. Vào VDI làm tiếp nhé.» (thân mật), «Đội tìm kiếm cứu nạn xin rút quân: bạn đã về sau 32 phút 🚁» (hài hước), «Rời máy 32 phút. Vào VDI làm tiếp.» (sếp khó tính) |
 | Tắt | `"away_alert_minutes": 0`. Không phụ thuộc `/nudge` |
 | VDI tự đóng | Citrix tự ngắt VDI khi không đụng VDI 10–20 phút: máy ảo vẫn chạy nhưng **cửa sổ Desktop Viewer biến mất**. Hôm nay bạn **đã làm trong VDI** (đã gõ phím / rê chuột trong VDI ít nhất một lần) mà cửa sổ mất ≥ 1 phút trong giờ làm thì bot báo ngay 1 lần: «🔌 Cửa sổ VDI đã đóng từ 10:42 … Lần cuối bạn làm trong VDI lúc 10:23, cách đây 20 phút.» Tổng kết ngày có dòng «VDI đã đóng (rời VDI quá lâu): 10:42–11:05», AI nhận trường `vdi_closed` |
 | VDI tự đóng: không báo khi | Nghỉ trưa, ngoài giờ làm (mất lúc trưa mà vào giờ làm vẫn chưa mở lại thì báo lúc đó), sáng chưa mở VDI lần nào, VDI mở sẵn từ sớm nhưng **chưa làm gì trong VDI** (ví dụ mở VDI 07:45 rồi đi pha cà phê, Citrix tự ngắt 08:02: không báo, tổng kết cũng không ghi), máy ngủ / `/pause` / nghỉ phép, cửa sổ mất dưới 1 phút (đang kết nối lại). Tắt hẳn: `"vdi_closed_alert": false` |
@@ -1679,7 +1679,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.2
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.3
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -3451,7 +3451,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.2`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.3`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

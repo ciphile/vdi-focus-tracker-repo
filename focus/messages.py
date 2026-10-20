@@ -60,7 +60,9 @@ def away(data, p=_persona.DEFAULT):
 
 
 def back(data, p=_persona.DEFAULT):
-    return f"Chào mừng quay lại. Bạn rời máy {data['minutes']} phút. Vào VDI làm tiếp nhé."
+    """Quay lại sau khi rời máy: câu theo giọng bot, luân phiên (persona.LEADS["back"])."""
+    return (_persona.lead("back", p, m=data["minutes"])
+            or f"Chào mừng quay lại. Bạn rời máy {data['minutes']} phút. Vào VDI làm tiếp nhé.")
 
 
 def phone(data, p=_persona.DEFAULT):
@@ -156,10 +158,7 @@ def pace_behind(info, p=_persona.DEFAULT, level="vua"):
     """Cảnh báo chậm tiến độ ở một mốc. info: pace.status(). Mức nghiem: câu gắt hơn."""
     strict = level == "nghiem"
     lead = _persona.lead("pace_behind_nghiem" if strict else "pace_behind", p)
-    hard = ""
-    if strict:
-        hard = ("Không bàn thêm. Đóng mọi app khác, VDI toàn màn hình, làm ngay." if _tone(p)
-                else "Nói thẳng: đóng hết app khác, mở VDI toàn màn hình và làm ngay bây giờ.")
+    hard = _persona.lead("pace_hard", p) if strict else ""   # cùng một ý, đổi câu theo giọng, luân phiên
     return _join(
         lead,
         f"📉 {info['at']}: mới làm thật trong VDI {_h(info['actual_h'])}, lúc này cần khoảng "
