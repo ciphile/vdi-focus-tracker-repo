@@ -40,6 +40,7 @@ PERF_EVERY_SECONDS = 600
 MAX_CONSECUTIVE_ERRORS = 720  # ~1 giờ đọc lỗi liên tục thì dừng hẳn (log + audit CRASH)
 LOCK_WAIT_SECONDS = 120       # bản mới chờ bản cũ thoát (vd. Task Scheduler bật lại đúng lúc bản cũ đang tắt)
 ALERT_COUNTERS_KEY = "alert_day_counters"  # bảng prefs: bộ đếm sao nhãng hôm nay (giữ qua lần tắt/bật)
+LINES_USED_KEY = "lines_used"  # bảng prefs: câu nhắc đã dùng (mã ngắn) để tắt/bật lại không lặp câu cũ
 ALERT_SAVE_TICKS = 300     # lưu bộ đếm sao nhãng mỗi 300 vòng (~25 phút, mẫu 5 giây) và lúc chốt ngày
 MAX_PENDING_ROWS = 2000       # DB bận/đầy: giữ tối đa chừng này mẫu chưa ghi trong RAM (~2,8 giờ)
 
@@ -411,9 +412,27 @@ class Tracker:
         except Exception as e:  # DB bận: lần sau lưu lại
             log.warning("Không lưu được bộ đếm sao nhãng: %s", e)
 
+    def _load_lines_used(self):
+        """Bật lại tracker: nạp danh sách câu nhắc đã gửi để luân phiên tiếp, không gửi lại câu vừa dùng."""
+        try:
+            persona.restore_used(get_pref(self.db, LINES_USED_KEY))
+        except Exception as e:  # DB bận: luân phiên lại từ đầu, vẫn theo dõi
+            log.warning("Không nạp được danh sách câu nhắc đã dùng: %s", e)
+
+    def _save_lines_used(self):
+        """Lưu danh sách câu nhắc đã dùng, chỉ khi vừa có câu mới (vài lần mỗi giờ, vài KB)."""
+        if not persona.used_dirty():
+            return
+        try:
+            set_pref(self.db, LINES_USED_KEY, persona.export_used())
+        except Exception as e:  # DB bận: lần sau lưu lại
+            persona._DIRTY[0] = True
+            log.warning("Không lưu được danh sách câu nhắc đã dùng: %s", e)
+
     def _finish_day(self, writer):
         """Chốt số liệu của self.day: ghi nốt mẫu trong RAM + tính daily_stats."""
         self._save_alert_counters()
+        self._save_lines_used()
         try:
             writer.flush()
         except Exception as e:
@@ -459,6 +478,7 @@ class Tracker:
             return "outside_window"
         self.db = open_db(db_path(cfg))
         self._load_alert_counters(now_dt.date())
+        self._load_lines_used()
         # Năm nay chưa có lịch lễ nào trên máy: tải MOM ngay (tối đa 1 lần/ngày) để không chạy nhầm ngày lễ.
         holidays.ensure_today_known(cfg, now_dt.date())
         kind, off = off_detail(self.db, cfg, self.day)
@@ -651,6 +671,7 @@ class Tracker:
                     work = is_work_time(cfg, hhmm, off, leave)
                     for kind, data in self.alerts.update(s, now, work, golden=in_golden(golden, hhmm)):
                         self.dispatch(kind, data, note)
+                    self._save_lines_used()  # chỉ ghi DB khi vừa gửi câu nhắc mới
                     if ticks % ALERT_SAVE_TICKS == 0:  # bộ đếm sao nhãng trong ngày: lưu ~25 phút/lần (chỉ khi đổi)
                         self._save_alert_counters()
                     if ticks % 6 == 0:  # việc theo giờ: kiểm tra mỗi 30 giây là đủ

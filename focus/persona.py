@@ -19,6 +19,8 @@ import json
 import os
 import random
 import re
+import threading
+import zlib
 
 from .config import CONFIG_DIR
 from .logs import get_logger
@@ -120,11 +122,11 @@ LEADS = {
                      "Không còn thời gian dạo chơi đâu {u}, chiến ngay! 🔥", "Tăng tốc tối đa nào {u}, ngay và luôn! 🏎️",
                      "Giờ vàng còn ít lắm {u} ơi, vào VDI liền! ⏰", "Tất tay luôn {u}! Vào VDI làm cho xong nào! 💥", "Hết giờ khởi động rồi {u}, vào trận thật thôi! ⚽", "Báo động cam {u} ơi! Gom hết sức vào VDI nào! 🔥"],
         "hai_huoc": ["Tiến độ đang đi bộ, deadline đang chạy xe máy. {U} vào VDI ngay!",
-                     "Năng suất hôm nay của {u} vừa nhập viện, tình trạng nguy kịch 🏥",
-                     "{Me} đã chuẩn bị sẵn điếu văn cho mục tiêu hôm nay rồi, cứu nó đi {u} 🕯️",
-                     "Deadline đang mài dao trong góc phòng đó {u} 🔪",
+                     "Mục tiêu hôm nay đang đứng ở trạm xe buýt chờ {u} mãi chưa thấy tới 🚏",
+                     "Đồng hồ hôm nay chạy marathon, còn {u} vẫn đang buộc dây giày 👟",
+                     "Số giờ hôm nay gầy quá, {u} vào VDI vỗ béo cho nó đi 🍚",
                      "Báo cáo cuối ngày của {u} đang viết thư xin nghỉ việc 💌",
-                     "Biểu đồ hôm nay đang hấp hối, hô hấp nhân tạo bằng VDI ngay {u} 🚑", "Deadline vừa gửi lời hỏi thăm sức khoẻ {u} đó, hơi rùng mình 👻", "Tốc độ hôm nay mà đi thi chắc về sau con ốc sên 🐌"],
+                     "Biểu đồ hôm nay đang hấp hối, hô hấp nhân tạo bằng VDI ngay {u} 🚑", "Thanh tiến độ hôm nay đang ngáp dài, đánh thức nó bằng VDI đi {u} 🥱", "Tốc độ hôm nay mà đi thi chắc về sau con ốc sên 🐌"],
         "sep_kho_tinh": ["Chậm quá. Không có lý do. Làm ngay.", "Thế này thì tối nay ngồi lại. Muốn vậy không?",
                          "Tôi không chấp nhận số liệu này.", "Còn thiếu nhiều. Không nghỉ nữa.",
                          "Cuối ngày tôi hỏi. Chuẩn bị câu trả lời.", "Làm cho đủ. Không thương lượng.", "Tụt quá xa. Làm việc.", "Hết thời gian lãng phí. VDI. Ngay."],
@@ -392,20 +394,63 @@ def apply(text, p):
         KEEP_OPEN, "").replace(KEEP_CLOSE, "")
 
 
-_USED = {}  # câu đã dùng theo từng nhóm (trong RAM): luân phiên, hết câu mới lặp lại
+_USED = {}  # câu đã dùng theo từng nhóm: luân phiên, hết câu mới lặp lại. Lưu mã ngắn của câu (không lưu cả câu)
+_LOCK = threading.Lock()  # bot Telegram và tracker cùng chọn câu
+_DIRTY = [False]  # có câu mới chọn chưa lưu vào DB
+MAX_KEYS = 200  # giới hạn lưu: số nhóm câu
+MAX_USED = 60  # giới hạn lưu: số câu nhớ trong một nhóm
+
+
+def _id(text):
+    """Mã ngắn 8 ký tự của một câu (để nhớ câu đã dùng mà không phải lưu cả câu)."""
+    return format(zlib.crc32(text.encode("utf-8")), "08x")
 
 
 def _rotate(key, options):
-    """Chọn ngẫu nhiên một câu CHƯA dùng trong nhóm key; dùng hết thì bắt đầu vòng mới (không lặp ngay câu vừa gửi)."""
-    used = _USED.setdefault(key, [])
-    fresh = [o for o in options if o not in used]
-    if not fresh:
-        last = used[-1:]
-        used[:] = last
-        fresh = [o for o in options if o not in last] or list(options)
-    pick = random.choice(fresh)
-    used.append(pick)
-    return pick
+    """Chọn ngẫu nhiên một câu CHƯA dùng trong nhóm key; dùng hết thì bắt đầu vòng mới (không lặp ngay câu vừa gửi).
+    Danh sách câu đã dùng được tracker lưu vào DB (export_used / restore_used) nên tắt/bật lại không lặp câu cũ."""
+    with _LOCK:
+        used = _USED.setdefault(key, [])
+        fresh = [o for o in options if _id(o) not in used]
+        if not fresh:
+            last = used[-1:]
+            used[:] = last
+            fresh = [o for o in options if _id(o) not in last] or list(options)
+        pick = random.choice(fresh)
+        used.append(_id(pick))
+        del used[:-MAX_USED]
+        _DIRTY[0] = True
+        return pick
+
+
+def used_dirty():
+    """True nếu có câu mới chọn chưa lưu."""
+    return _DIRTY[0]
+
+
+def export_used():
+    """Câu đã dùng theo nhóm, dạng JSON gọn để lưu vào DB (bảng prefs). Đánh dấu đã lưu."""
+    with _LOCK:
+        data = {"|".join(map(str, k)): list(v) for k, v in list(_USED.items())[-MAX_KEYS:] if v}
+        _DIRTY[0] = False
+    return json.dumps(data, separators=(",", ":"))
+
+
+def restore_used(raw):
+    """Nạp lại câu đã dùng (lúc tracker bật). Dữ liệu hỏng thì bỏ qua: chỉ là luân phiên lại từ đầu."""
+    try:
+        data = json.loads(raw) if raw else {}
+    except ValueError:
+        return False
+    if not isinstance(data, dict):
+        return False
+    with _LOCK:
+        for k, v in list(data.items())[-MAX_KEYS:]:
+            if isinstance(k, str) and isinstance(v, list):
+                ids = [x for x in v if isinstance(x, str) and len(x) == 8][-MAX_USED:]
+                if ids:
+                    _USED.setdefault(tuple(k.split("|")), [])[:] = ids
+    return True
 
 
 def lead_from(key, options, p, **extra):

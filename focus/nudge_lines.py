@@ -266,6 +266,8 @@ NUDGE = {
             "Deadline đang mài dao ngoài cửa đó {u} 🔪",
             "Cây xương rồng trên bàn hôm nay còn chăm hơn {u} 🌵",
             "VDI bắt đầu giăng mạng nhện rồi {u} ơi 🕸️",
+            "Bảng chấm công của {u} vừa nhờ {me} gọi xe cấp cứu 🚑",
+            "{Me} đã đặt sẵn chỗ trong viện bảo tàng cho năng suất hôm nay của {u} 🦖",
         ],
         "sep_kho_tinh": [
             "Lại ra ngoài VDI. Tôi nói lần nữa: quay lại làm việc.",
