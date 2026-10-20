@@ -40,6 +40,7 @@ PERF_EVERY_SECONDS = 600
 MAX_CONSECUTIVE_ERRORS = 720  # ~1 giờ đọc lỗi liên tục thì dừng hẳn (log + audit CRASH)
 LOCK_WAIT_SECONDS = 120       # bản mới chờ bản cũ thoát (vd. Task Scheduler bật lại đúng lúc bản cũ đang tắt)
 ALERT_COUNTERS_KEY = "alert_day_counters"  # bảng prefs: bộ đếm sao nhãng hôm nay (giữ qua lần tắt/bật)
+LINES_SAVE_TICKS = 60       # lưu câu nhắc đã dùng mỗi 60 vòng (~5 phút, mẫu 5 giây) và lúc chốt ngày / tắt
 LINES_USED_KEY = "lines_used"  # bảng prefs: câu nhắc đã dùng (mã ngắn) để tắt/bật lại không lặp câu cũ
 ALERT_SAVE_TICKS = 300     # lưu bộ đếm sao nhãng mỗi 300 vòng (~25 phút, mẫu 5 giây) và lúc chốt ngày
 MAX_PENDING_ROWS = 2000       # DB bận/đầy: giữ tối đa chừng này mẫu chưa ghi trong RAM (~2,8 giờ)
@@ -671,7 +672,8 @@ class Tracker:
                     work = is_work_time(cfg, hhmm, off, leave)
                     for kind, data in self.alerts.update(s, now, work, golden=in_golden(golden, hhmm)):
                         self.dispatch(kind, data, note)
-                    self._save_lines_used()  # chỉ ghi DB khi vừa gửi câu nhắc mới
+                    if ticks % LINES_SAVE_TICKS == 0:  # câu nhắc đã dùng: xem ~5 phút/lần, chỉ ghi DB khi có câu mới
+                        self._save_lines_used()
                     if ticks % ALERT_SAVE_TICKS == 0:  # bộ đếm sao nhãng trong ngày: lưu ~25 phút/lần (chỉ khi đổi)
                         self._save_alert_counters()
                     if ticks % 6 == 0:  # việc theo giờ: kiểm tra mỗi 30 giây là đủ

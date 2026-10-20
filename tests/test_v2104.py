@@ -73,3 +73,9 @@ class RestartNoRepeatTest(TempCase):
         nudge = set(NUDGE["nghiem"]["hai_huoc"])
         self.assertFalse(pace & nudge)
         self.assertFalse([x for x in pace if "mài dao" in x])
+
+
+class SaveIntervalTest(TempCase):
+    def test_saved_about_every_5_minutes_not_every_sample(self):
+        from focus import tracker
+        self.assertEqual(tracker.LINES_SAVE_TICKS * 5, 300)  # 60 vòng × mẫu 5 giây = 5 phút
