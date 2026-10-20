@@ -20,7 +20,7 @@
   "water_reminder_minutes": 60,
   "golden_hours": "auto",
   "golden_nudge_minutes": 5,
-  "phone_pattern_count": 3,
+  "phone_pattern_count": 5,
   "fullscreen_tip_minutes": 15,
   "pace_check_enabled": true,
   "pace_target_vdi_hours": 6,

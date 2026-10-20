@@ -84,7 +84,7 @@ DEFAULTS = {
     "golden_hours": "auto",
     "golden_nudge_minutes": 5,   # chỉ áp dụng cho mức vua / nghiem
     # Ngồi yên 1–5 phút trước VDI lặp lại >= N lần trong 30 phút: nhắc cất điện thoại (0 = tắt).
-    "phone_pattern_count": 3,
+    "phone_pattern_count": 5,
     # VDI không toàn màn hình liên tục N phút trong giờ làm: gợi ý phóng to (1 lần/ngày, 0 = tắt).
     "fullscreen_tip_minutes": 15,
     # Nhắc đứng dậy, đi lại, vươn vai, tập mắt (20-20-20) khi ngồi làm liên tục N phút; chưa nghỉ thì nhắc lại mỗi

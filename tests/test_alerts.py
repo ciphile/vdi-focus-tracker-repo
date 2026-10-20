@@ -193,6 +193,7 @@ class AlertsTest(unittest.TestCase):
 
     # --- điện thoại ----------------------------------------------------
     def test_phone_pattern(self):
+        self.cfg["phone_pattern_count"] = 3   # kiểm tra cơ chế với 3 lần (mặc định từ 2.10.2 là 5)
         self.start()
         for _ in range(3):
             self.run_for(5)
@@ -304,6 +305,17 @@ class AlertsTest(unittest.TestCase):
         self.feed([1, 1])
         self.assertEqual(len(self.al.short_idles), 1)
 
+    def test_phone_default_needs_5_in_30_minutes(self):
+        self.assertEqual(self.cfg["phone_pattern_count"], 5)
+        self.start()
+        for _ in range(4):
+            self.run_for(4)
+            self.run_for(2, idle_grow=True)
+        self.assertNotIn("phone", self.kinds(self.run_for(0.2)))     # 4 lần: chưa nhắc
+        self.run_for(1)
+        self.run_for(2, idle_grow=True)
+        self.assertIn("phone", self.kinds(self.run_for(0.2)))        # lần thứ 5 trong 30 phút: nhắc
+
     def test_touch_then_lock_is_not_short_idle(self):
         self.start()
         self.run_for(5)
@@ -315,6 +327,7 @@ class AlertsTest(unittest.TestCase):
 
     def test_real_phone_pattern_with_touches_still_alerts(self):
         # Cầm điện thoại thật: mỗi lần ngồi yên 2 phút rồi làm tiếp. Vẫn báo dù có 1 lần chạm lẻ ở giữa.
+        self.cfg["phone_pattern_count"] = 3
         self.start()
         self.run_for(5)
         self.feed(self.grow(5, 60))

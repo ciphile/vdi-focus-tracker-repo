@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.10.1 (`focus/__init__.py`) |
+| Phiên bản | 2.10.2 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -53,7 +53,7 @@ VDI đang ở trước, phóng to. Bạn không chạm phím / chuột bao lâu?
    |-- dưới 60 giây --> vẫn tính là làm trong VDI (đang đọc, đang nghĩ)
    |
    |-- 60 giây tới 5 phút --> "ngồi yên" (inactive): không tính vào giờ làm trong VDI.
-   |                          Ngồi yên rồi làm tiếp lặp 3 lần trong 30 phút
+   |                          Ngồi yên rồi làm tiếp lặp 5 lần trong 30 phút
    |                          --> bot nhắc cất điện thoại (mục 4.5)
    |
    |-- từ 5 phút (hoặc khoá máy, máy ngủ) --> "rời máy": không tính là làm việc, không bị
@@ -1226,17 +1226,17 @@ VDI ở trước mà không gõ (họp chỉ nghe) thì tin có thêm «(Đang h
 
 | | Cất điện thoại | Phóng to VDI |
 |---|---|---|
-| Dấu hiệu | VDI ở trước, ngồi yên 1–5 phút rồi mới làm tiếp, lặp `phone_pattern_count` (3) lần trong 30 phút. "Làm tiếp" = chạm phím/chuột ở 2 mẫu 5 giây liền nhau (báo trễ 5 giây); chạm lẻ một lần ở giữa không cắt quãng ngồi yên làm hai | Cộng dồn `fullscreen_tip_minutes` (15) phút bạn đang dùng VDI (VDI ở trước, có gõ phím/chuột) mà VDI không toàn màn hình. VDI nằm sau / thu nhỏ: đồng hồ dừng (phần đó đã tính là sao nhãng); phóng to VDI: đồng hồ về 0 |
+| Dấu hiệu | VDI ở trước, ngồi yên 1–5 phút rồi mới làm tiếp, lặp `phone_pattern_count` (5) lần trong 30 phút. "Làm tiếp" = chạm phím/chuột ở 2 mẫu 5 giây liền nhau (báo trễ 5 giây); chạm lẻ một lần ở giữa không cắt quãng ngồi yên làm hai | Cộng dồn `fullscreen_tip_minutes` (15) phút bạn đang dùng VDI (VDI ở trước, có gõ phím/chuột) mà VDI không toàn màn hình. VDI nằm sau / thu nhỏ: đồng hồ dừng (phần đó đã tính là sao nhãng); phóng to VDI: đồng hồ về 0 |
 | Tần suất | Cách nhau ít nhất 60 phút; mức nhẹ: tối đa 1 lần/ngày | 1 lần/ngày |
 | Tắt | `phone_pattern_count: 0` hoặc `/nudge off` | `fullscreen_tip_minutes: 0` hoặc `/nudge off` |
 
 ```
-📱 3 lần trong 30 phút bạn ngồi yên 1–5 phút trước VDI rồi mới làm tiếp. Thường là đang cầm điện thoại/iPad. Úp điện thoại xuống, để ngoài tầm tay cho tới giờ nghỉ nhé. (Đang đọc code/tài liệu thì bỏ qua tin này.)
+📱 5 lần trong 30 phút bạn ngồi yên 1–5 phút trước VDI rồi mới làm tiếp. Thường là đang cầm điện thoại/iPad. Úp điện thoại xuống, để ngoài tầm tay cho tới giờ nghỉ nhé. (Đang đọc code/tài liệu thì bỏ qua tin này.)
 
 🖥️ Bạn đã làm 15 phút trong VDI mà VDI không toàn màn hình. Phóng to VDI trên một màn hình, để Chrome/Zalo ở màn hình kia hoặc tắt hẳn: ít thấy thì ít bấm.
 ```
 
-Ví dụ nhắc cất điện thoại (mặc định 3 lần trong 30 phút). Bot chỉ tính quãng ngồi yên khi **VDI đang ở trước mặt**:
+Ví dụ nhắc cất điện thoại (mặc định 5 lần trong 30 phút). Bot chỉ tính quãng ngồi yên khi **VDI đang ở trước mặt**:
 
 ```
 08:40:15 – 08:41:59  VDI ở trước, không chạm phím/chuột 1 phút 44 giây, rồi gõ tiếp   -> lần 1
@@ -1244,7 +1244,9 @@ Ví dụ nhắc cất điện thoại (mặc định 3 lần trong 30 phút). Bo
 08:45:34 – 08:47:44  VDI thu nhỏ, đang dùng Notepad++                                -> không tính (đã có nhắc sao nhãng riêng)
 08:51:20 – 08:52:19  ngồi yên 59 giây                                                 -> không tính (dưới 1 phút)
 08:55:50 – 08:57:34  VDI ở trước, ngồi yên 1 phút 44 giây, rồi gõ tiếp                -> lần 3
-08:57:44             đủ 3 lần trong 30 phút -> bot gửi tin 📱 ở trên, đếm lại từ 0
+09:01:10 – 09:03:05  VDI ở trước, ngồi yên 1 phút 55 giây, rồi gõ tiếp                -> lần 4
+09:06:20 – 09:07:40  VDI ở trước, ngồi yên 1 phút 20 giây, rồi gõ tiếp                -> lần 5
+09:07:50             đủ 5 lần trong 30 phút -> bot gửi tin 📱 ở trên, đếm lại từ 0
 ```
 
 Quãng ngồi yên từ 5 phút trở lên là «rời máy» (mục 4.4), không tính vào nhắc này. Bot không phân biệt được bạn đang cầm điện thoại hay đang đọc code trên màn hình VDI. Nếu bị nhắc nhiều khi đọc code, tăng số lần trong `config/settings.json`, ví dụ `"phone_pattern_count": 7` = 7 lần trong 30 phút mới nhắc (lưu file rồi tắt và bật lại tracker). `0` = tắt hẳn.
@@ -1677,7 +1679,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.2
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -3181,7 +3183,7 @@ Không bắt buộc. Chỉ cần ghi dòng muốn đổi; dòng không có dùng
 | `golden_nudge_minutes` | `5` | Ngưỡng nhắc trong giờ vàng (mức vừa / nghiêm) |
 | `away_alert_minutes` | `15` | Rời máy quá N phút thì nhắc (0 = tắt) |
 | `vdi_closed_alert` | `true` | Cửa sổ VDI biến mất trong giờ làm (Citrix tự ngắt) thì báo ngay (mục 4.4) |
-| `phone_pattern_count` | `3` | Số lần ngồi yên 1–5 phút trong 30 phút để nhắc cất điện thoại (0 = tắt) |
+| `phone_pattern_count` | `5` | Số lần ngồi yên 1–5 phút trong 30 phút để nhắc cất điện thoại (0 = tắt) |
 | `fullscreen_tip_minutes` | `15` | Dùng VDI không toàn màn hình cộng dồn N phút (chỉ lúc VDI ở trước) thì gợi ý, 1 lần/ngày (0 = tắt) |
 | `break_reminder_enabled`, `break_reminder_minutes` | `true`, `60` | Nhắc đứng dậy (0 phút = tắt). Đổi nhanh `/break` |
 | `water_reminder_enabled`, `water_reminder_minutes` | `false`, `60` | Nhắc uống nước, **mặc định tắt** khi cài lần đầu (0 phút cũng = tắt). Bật nhanh `/water on` |
@@ -3449,7 +3451,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.2`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

@@ -266,7 +266,8 @@ class FullDayTest(_Base):
     def setUp(self):
         super().setUp()
         # nhắc uống nước tắt ở đây (kiểm tra riêng trong tests/test_health.py) để giữ nguyên EXPECTED_DAY
-        self.cfg.update(nudge_level="nghiem", nudge_strict_minutes=10, water_reminder_minutes=0)
+        self.cfg.update(nudge_level="nghiem", nudge_strict_minutes=10, water_reminder_minutes=0,
+                        phone_pattern_count=3)  # kịch bản ngày viết với 3 lần (mặc định 5)
         self.tr, self.fc, self.probe, self.bot, self.nt = make_tracker(self.cfg, FRIDAY, "07:00:00", DAY_SCRIPT)
         self.result = self.tr.run()
 
