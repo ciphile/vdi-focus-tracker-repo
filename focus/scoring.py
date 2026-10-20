@@ -258,6 +258,9 @@ SCIENCE = {
                     "sỏi thận): nhóm uống nhiều nước tái phát sỏi 12%, nhóm không đổi thói quen tái phát 27%.",
     "water_brain": "Ganio và cộng sự (British Journal of Nutrition 2011, 26 nam thanh niên): chỉ mất nước nhẹ khoảng "
                    "1,6% cân nặng đã làm tăng lỗi khi canh chừng, chậm trí nhớ làm việc, căng thẳng và mệt mỏi hơn.",
+    "water_uti": "Thử nghiệm ngẫu nhiên của Hooton và cộng sự (JAMA Internal Medicine 2018, 140 phụ nữ hay bị viêm "
+                 "bàng quang, vốn uống ít): uống thêm 1,5 lít nước mỗi ngày trong 12 tháng thì số lần viêm giảm gần "
+                 "một nửa (trung bình 1,7 lần so với 3,2 lần).",
     "sitting_mortality": "Phân tích gộp trên Lancet (Ekelund và cộng sự 2016, hơn 1 triệu người, 16 nghiên cứu): ngồi "
                          "trên 8 tiếng/ngày mà ít vận động thì nguy cơ tử vong sớm cao hơn; vận động vừa 60–75 phút "
                          "mỗi ngày xoá được phần nguy cơ tăng thêm đó.",

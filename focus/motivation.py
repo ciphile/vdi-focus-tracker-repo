@@ -301,9 +301,10 @@ def break_message(db, minutes, p=None, water=False):
     lead = _persona.lead("break", p) if p else ""
     body = (f"Bạn đã tập trung liên tục {minutes} phút, giỏi lắm. Đứng dậy nghỉ 3–5 phút: đi lại vài vòng, vươn vai, "
             "cho mắt nghỉ theo quy tắc 20-20-20 (nhìn xa 6 mét trong 20 giây) để đỡ mỏi mắt, đỡ cận.")
-    if water:
-        body += "\n💧 Tiện thể rót một ly nước uống luôn nhé."
-    from .messages import SITTING_SCIENCE, science_line  # import trễ
+    from .messages import SITTING_SCIENCE, WATER_HEALTH, science_line  # import trễ
+    if water:  # kèm một bệnh hay gặp khi ngồi nhiều / uống ít, luân phiên để không lặp câu
+        body += ("\n💧 Tiện thể rót một ly nước uống luôn nhé. "
+                 + _persona._rotate(("break_water",), list(WATER_HEALTH)))
     return (f"{lead}\n{body}" if lead else body) + f"\n\n{tip}\n\n{science_line(SITTING_SCIENCE)}"
 
 

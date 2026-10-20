@@ -138,3 +138,29 @@ class OfflineVarietyTest(TempCase):
         for kind in ("away", "break", "pace_behind", "pace_behind_nghiem", "pace_praise", "water"):
             got = [persona.lead(kind, p) for _ in range(len(persona.LEADS[kind]["sep_kho_tinh"]))]
             self.assertEqual(len(set(got)), len(got), kind)              # xoay hết danh sách rồi mới lặp
+
+
+class WaterVarietyTest(TempCase):
+    """Nhắc uống nước: câu mở, mẹo / bệnh hay gặp, nghiên cứu đều luân phiên, không lặp câu."""
+
+    def test_lists_are_large_and_distinct(self):
+        for tone in persona.TONES:
+            lines = persona.LEADS["water"][tone]
+            self.assertGreaterEqual(len(lines), 12, tone)
+            self.assertEqual(len(set(lines)), len(lines), tone)
+        self.assertGreaterEqual(len(messages.WATER_TIPS), 12)
+        self.assertGreaterEqual(len(messages.WATER_HEALTH), 10)
+        self.assertTrue(any("sỏi thận" in x for x in messages.WATER_HEALTH))
+        self.assertTrue(any("tiết niệu" in x for x in messages.WATER_HEALTH))
+        self.assertTrue(any("huyết khối" in x for x in messages.WATER_HEALTH))
+
+    def test_no_repeat_within_a_round(self):
+        p = dict(persona.DEFAULT, giong="hai_huoc", goi_nguoi_dung="bờ rồ")
+        msgs = [messages.water({}, p).splitlines() for _ in range(12)]
+        self.assertEqual(len({m[0] for m in msgs}), 12)                       # câu mở không lặp
+        self.assertEqual(len({m[1] for m in msgs}), 12)                       # mẹo / bệnh không lặp
+        self.assertEqual(len({m[2] for m in msgs[:3]}), 3)                    # 3 nghiên cứu xoay vòng
+        for m in msgs:
+            self.assertNotIn("{", "\n".join(m))
+        boss = [messages.water({}, dict(p, giong="sep_kho_tinh")).splitlines()[0] for _ in range(12)]
+        self.assertTrue(all(EMOJI.search(x) is None for x in boss))

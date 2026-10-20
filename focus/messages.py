@@ -76,10 +76,35 @@ def not_fullscreen(data, p=_persona.DEFAULT):
 
 WATER_TIPS = ["Uống từng ngụm, đừng uống ừng ực một lần.", "Để sẵn bình nước trên bàn, trong tầm mắt.",
               "Nước lọc là tốt nhất; trà, cà phê không thay được nước.",
-              "Đi rót nước cũng là dịp đứng dậy, đi lại một chút.", ""]
+              "Đi rót nước cũng là dịp đứng dậy, đi lại một chút.",
+              "Đừng đợi khát mới uống: thấy khát là cơ thể đã hơi thiếu nước rồi.",
+              "Nước tiểu vàng sậm là dấu hiệu nên uống thêm; vàng nhạt là ổn.",
+              "Mỗi lần mở một cuộc họp, làm một ngụm trước.",
+              "Dùng bình có vạch chia, nhìn là biết hôm nay đã uống bao nhiêu.",
+              "Uống một ly ngay sau khi ăn trưa, đầu giờ chiều đỡ uể oải hơn.",
+              "Nước ấm hay nước mát đều được, miễn là uống đều trong ngày.",
+              "Rót ly nhỏ, uống hết rồi đi rót tiếp: vừa uống đủ vừa có cớ đứng dậy.",
+              "Thêm lát chanh hay vài lá bạc hà nếu thấy nước lọc nhạt quá.",
+              "Đang chờ chạy job / compile thì nhấp vài ngụm, không phí phút nào.",
+              "Cà phê, trà đặc làm đi tiểu nhiều hơn, nhớ uống bù thêm nước lọc."]
+
+# Bệnh hay gặp khi ngồi nhiều, ít vận động, uống ít nước: viết chung chung, đúng hiểu biết y khoa phổ thông, không doạ.
+WATER_HEALTH = ["Ngồi nhiều, uống ít là hai yếu tố hay gặp ở người bị sỏi thận.",
+                "Uống ít và nhịn tiểu lâu dễ bị viêm đường tiết niệu, nhất là khi ngồi cả ngày.",
+                "Thiếu nước cộng ít vận động là nguyên nhân thường gặp của táo bón.",
+                "Mất nước nhẹ đã đủ gây đau đầu, mệt và khó tập trung về chiều.",
+                "Uống ít làm nước tiểu đậm đặc, cặn dễ lắng lại thành sỏi.",
+                "Ngồi liền nhiều giờ không cử động làm máu ở chân lưu thông chậm, tăng nguy cơ huyết khối tĩnh mạch "
+                "sâu. Đứng dậy rót nước là cách cử động đơn giản nhất.",
+                "Ngồi lâu ít vận động làm cổ, vai, lưng dưới cứng và đau; mỗi lần đi rót nước là một lần giãn cơ.",
+                "Ngồi nhiều, ít vận động nhiều năm làm tăng nguy cơ tiểu đường type 2 và bệnh tim mạch.",
+                "Ngồi lâu ít đi lại làm chân dễ phù, tê mỏi về chiều.",
+                "Thiếu nước có thể làm da và mắt khô hơn, nhất là khi ngồi máy lạnh nhìn màn hình cả ngày.",
+                "Ngồi lì một chỗ còn làm cơ mông, cơ đùi yếu dần, về lâu dài dễ đau lưng.",
+                "Cơn uể oải đầu giờ chiều có khi do thiếu nước chứ không phải thiếu cà phê."]
 
 
-WATER_SCIENCE = ("water_kidney", "water_brain")   # dữ kiện đã kiểm chứng trong scoring.SCIENCE
+WATER_SCIENCE = ("water_kidney", "water_brain", "water_uti")   # dữ kiện đã kiểm chứng trong scoring.SCIENCE
 SITTING_SCIENCE = ("sitting_glucose", "sitting_mortality", "micro_breaks")
 
 
@@ -90,9 +115,12 @@ def science_line(keys):
 
 
 def water(data, p=_persona.DEFAULT):
-    """Nhắc uống nước: câu ngắn theo giọng + đôi khi một mẹo nhỏ + một dữ kiện nghiên cứu y khoa có thật."""
-    tip = random.choice(WATER_TIPS)
-    return _join(_persona.lead("water", p) or "Uống nước nhé.", f"💧 {tip}" if tip else "", science_line(WATER_SCIENCE))
+    """Nhắc uống nước: câu theo giọng + một mẹo hoặc một bệnh hay gặp khi ngồi nhiều / uống ít + một nghiên cứu có thật.
+    Cả ba phần luân phiên (dùng hết mới lặp) nên nhắc nhiều lần trong ngày vẫn không lặp câu."""
+    from .scoring import SCIENCE
+    extra = _persona._rotate(("water_extra",), [f"💧 {t}" for t in WATER_TIPS] + [f"🩺 {t}" for t in WATER_HEALTH])
+    study = _persona._rotate(("water_science",), list(WATER_SCIENCE))
+    return _join(_persona.lead("water", p) or "Uống nước nhé.", extra, "🔬 " + SCIENCE[study])
 
 
 def golden_tip(ranges):

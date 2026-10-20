@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.9.0 (`focus/__init__.py`) |
+| Phiên bản | 2.10.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1290,7 +1290,7 @@ Nhắc sức khoẻ **không phụ thuộc** `/nudge` (kể cả `/nudge off` v�
 | | Đứng dậy, vận động, tập mắt | Uống nước |
 |---|---|---|
 | Khi nào | Làm trong VDI liên tục `break_reminder_minutes` (60) phút (ngắt ≤ 2 phút vẫn tính liên tục); chưa nghỉ thì cứ mỗi 60 phút nhắc lại | **Mặc định TẮT** khi cài lần đầu (giống Kinh Thánh). Bật bằng `/water on`: mỗi `water_reminder_minutes` (60) phút giờ làm |
-| Nội dung | Câu mở theo giọng + đứng dậy 3–5 phút, đi lại, vươn vai, quy tắc mắt 20-20-20 + 1 bài tập ngắn (không lặp 6 lần gần nhất) + **1 dữ kiện nghiên cứu y khoa có thật** (🔬, bảng dưới) | Câu ngắn theo giọng + đôi khi một mẹo + **1 dữ kiện nghiên cứu** (🔬) |
+| Nội dung | Câu mở theo giọng + đứng dậy 3–5 phút, đi lại, vươn vai, quy tắc mắt 20-20-20 + 1 bài tập ngắn (không lặp 6 lần gần nhất) + **1 dữ kiện nghiên cứu y khoa có thật** (🔬, bảng dưới) | Câu mở theo giọng (12 câu mỗi giọng) + một mẹo uống nước (💧, 14 mẹo) **hoặc** một bệnh hay gặp khi ngồi nhiều, ít vận động, uống ít (🩺, 12 câu: sỏi thận, viêm đường tiết niệu, táo bón, đau đầu, huyết khối tĩnh mạch sâu, đau lưng, tiểu đường type 2, tim mạch...) + **1 dữ kiện nghiên cứu** (🔬). Cả ba phần luân phiên, dùng hết mới lặp, nên nhắc nhiều lần trong ngày không lặp câu (`focus/messages.py`: `WATER_TIPS`, `WATER_HEALTH`; câu mở trong `focus/persona.py`) |
 | Không nhắc lúc | Ngoài giờ làm, trưa, nghỉ phép | Trưa, nghỉ phép, `/pause`; đang khoá máy / ngồi yên thì chờ tới lúc bạn quay lại (chạm lẻ một lần không tính) |
 | Trùng giờ | Hai nhắc tới hạn cách nhau ≤ 1 phút: gộp vào **một** tin | |
 | Lệnh | `/break` (`/nghingoi`) `on` · `off` · `45` · `mac_dinh` | `/water` (`/uongnuoc`) `on` · `off` · `45` · `mac_dinh` |
@@ -1300,11 +1300,19 @@ Nhắc sức khoẻ **không phụ thuộc** `/nudge` (kể cả `/nudge off` v�
 ```
 Bạn ơi, ngồi lâu rồi, mình nghỉ chân chút nha.
 Bạn đã tập trung liên tục 60 phút, giỏi lắm. Đứng dậy nghỉ 3–5 phút: đi lại vài vòng, vươn vai, cho mắt nghỉ theo quy tắc 20-20-20 (nhìn xa 6 mét trong 20 giây) để đỡ mỏi mắt, đỡ cận.
-💧 Tiện thể rót một ly nước uống luôn nhé.
+💧 Tiện thể rót một ly nước uống luôn nhé. Uống ít làm nước tiểu đậm đặc, cặn dễ lắng lại thành sỏi.
 
 Cổ vai: nghiêng đầu sang trái giữ 15 giây, sang phải 15 giây. Rụt vai lên tai rồi thả xuống 10 lần.
 
 🔬 Dunstan và cộng sự (Diabetes Care 2012, 19 người 45–65 tuổi thừa cân): cứ 20 phút đứng dậy đi bộ nhẹ 2 phút thì đường huyết sau ăn giảm khoảng một phần tư, insulin giảm khoảng 23% so với ngồi liền.
+```
+
+Nhắc uống nước riêng (giọng hài hước):
+
+```
+Thận của bạn vừa gửi thư tay xin nước 💌
+🩺 Ngồi liền nhiều giờ không cử động làm máu ở chân lưu thông chậm, tăng nguy cơ huyết khối tĩnh mạch sâu. Đứng dậy rót nước là cách cử động đơn giản nhất.
+🔬 Thử nghiệm ngẫu nhiên của Hooton và cộng sự (JAMA Internal Medicine 2018, 140 phụ nữ hay bị viêm bàng quang, vốn uống ít): uống thêm 1,5 lít nước mỗi ngày trong 12 tháng thì số lần viêm giảm gần một nửa (trung bình 1,7 lần so với 3,2 lần).
 ```
 
 Dữ kiện 🔬 lấy ngẫu nhiên từ danh sách cố định trong `focus/scoring.py` (`SCIENCE`), đã đối chiếu bản tóm tắt / bài gốc. AI không tham gia, nên không có nghiên cứu bịa.
@@ -1316,6 +1324,7 @@ Dữ kiện 🔬 lấy ngẫu nhiên từ danh sách cố định trong `focus/s
 | Đứng dậy | Albulescu và cộng sự, PLOS ONE 2022 (gộp 22 nghiên cứu) | Nghỉ ngắn ≤ 10 phút tăng sức sống, giảm mệt mỏi |
 | Uống nước | Borghi và cộng sự, Journal of Urology 1996 (199 người, 5 năm) | Uống nhiều nước: sỏi thận tái phát 12% so với 27% |
 | Uống nước | Ganio và cộng sự, British Journal of Nutrition 2011 (26 người) | Mất nước nhẹ khoảng 1,6% cân nặng: tăng lỗi khi canh chừng, chậm trí nhớ làm việc, căng thẳng và mệt hơn |
+| Uống nước | Hooton và cộng sự, JAMA Internal Medicine 2018 (140 phụ nữ, 12 tháng) | Uống thêm 1,5 lít/ngày: viêm bàng quang tái phát giảm gần một nửa (1,7 so với 3,2 lần) |
 
 ```
 » /break 45
@@ -1655,7 +1664,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.9.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -3427,7 +3436,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.9.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.
