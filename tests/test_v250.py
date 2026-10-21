@@ -113,7 +113,7 @@ class ReportCardsTest(TempCase):
         from tests.helpers import insert_run
         insert_run(self.db, TUE, "09:00", 30)
         self.db.execute("INSERT INTO ai_cache VALUES (?,?,?)", (f"review:{TUE}:x", 1.0, "Lời AI thật"))
-        self.assertIn("<div class='ai'>Lời AI thật</div>", self.html())
+        self.assertIn("<div class='ai'><div class='aisec'><p>Lời AI thật</p></div></div>", self.html())
 
     def test_demo_has_sample_ai_reviews(self):
         import contextlib

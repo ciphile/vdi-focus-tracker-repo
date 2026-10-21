@@ -11,6 +11,7 @@ import datetime as dt
 import math
 
 from . import energy, robots, scoring
+from .review_text import drop_wish_heading, sections
 from .analysis import day_bounds, fmt_dur, fmt_t, focus_score, hour_end, ot_ranges
 from .report import avg_dur, breakdown_parts, esc, insights, late_ot_texts, leave_line, real_work_line
 
@@ -161,6 +162,8 @@ padding:0 6px;font-weight:800}
 .bubble::after{content:"";position:absolute;left:36px;bottom:-17px;width:26px;height:26px;background:#fff;
 border-right:3px solid var(--line);border-bottom:3px solid var(--line);transform:skewY(35deg) rotate(10deg)}
 .ai{white-space:normal;line-height:1.6}
+.aisec{margin:0 0 16px}.aisec:last-child{margin-bottom:0}.aisec p{margin:6px 0 0}
+.aih{display:inline-block;margin:0;padding:1px 10px;background:var(--min);border:2px solid var(--line);border-radius:6px;box-shadow:2px 2px 0 var(--line);font-size:14px;font-weight:800;letter-spacing:.2px}
 /* giấy ghi chú */
 .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:22px 18px;margin-top:8px}
 .note{position:relative;background:#FFF9F2;border:var(--b);border-radius:4px 4px 22px 4px;box-shadow:var(--sh);
@@ -599,7 +602,12 @@ def render_day(cfg, a, note, week, extra=None):
 def ai_box(text, when):
     """Khung lời AI; chưa có thì vẫn hiện khung, nói rõ vì sao chưa có (không bịa lời khuyên)."""
     if text:
-        return f"<div class='card bubble'><div class='ai'>{esc(text)}</div></div>"
+        parts = []
+        for head, lines in sections(drop_wish_heading(text)):
+            body = "<br>".join(esc(x) for x in lines)
+            parts.append("<div class='aisec'>" + (f"<h3 class='aih'>{esc(head)}</h3>" if head else "")
+                         + (f"<p>{body}</p>" if body else "") + "</div>")
+        return f"<div class='card bubble'><div class='ai'>{''.join(parts)}</div></div>"
     return (f"<div class='card mut'>Chưa có lời AI cho báo cáo này. {esc(when)} Cần bật /aireview và có API key "
             "Gemini (README mục 2.3).</div>")
 

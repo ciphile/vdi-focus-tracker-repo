@@ -18,6 +18,7 @@ from .logs import get_logger
 
 log = get_logger()
 
+from .review_text import drop_wish_heading
 from .quotes import BIBLE, QUOTES, menu as quote_menu  # câu trích đã kiểm nguyên văn (xem quotes.py)
 
 FAMILY = [
@@ -572,7 +573,7 @@ def review_day(cfg, db, facts):
     key = _key(f"review:{facts['day']}", {"facts": payload, "ctx": ai_context.fingerprint(cfg)})
     hit = _cached(db, key)
     if hit:
-        return hit, None
+        return drop_wish_heading(hit), None
     task = DAILY_TASK.format(day=facts["day"], weekday=facts.get("weekday", ""), goal=facts.get("goal_hours"),
                              wish=evening_wish_hint(facts["day"]),
                              quote_hint=_quote_hint(cfg), score_guide=scoring.score_guide())
@@ -583,7 +584,7 @@ def review_day(cfg, db, facts):
         log.warning("AI đánh giá ngày lỗi: %s", e)
         return None, ReviewError.of(str(e), getattr(e, "permanent", False))
     _store(db, key, text)
-    return text, None
+    return drop_wish_heading(text), None
 
 
 def weekly_review(cfg, db, facts):
@@ -600,7 +601,7 @@ def review_week(cfg, db, facts):
     key = _key(f"week:{facts['week']}", {"facts": full, "ctx": ai_context.fingerprint(cfg)})
     hit = _cached(db, key)
     if hit:
-        return hit, None
+        return drop_wish_heading(hit), None
     task = WEEKLY_TASK.format(week=facts["week"], start=facts.get("from"), end=facts.get("to"),
                               quote_hint=_quote_hint(cfg), wish=evening_wish_hint(facts.get("to") or facts["from"]),
                               score_guide=scoring.score_guide())
@@ -611,7 +612,7 @@ def review_week(cfg, db, facts):
         log.warning("AI tổng kết tuần lỗi: %s", e)
         return None, ReviewError.of(str(e), getattr(e, "permanent", False))
     _store(db, key, text)
-    return text, None
+    return drop_wish_heading(text), None
 
 
 # ------------------------------------------------------------ AS400

@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.10.5 (`focus/__init__.py`) |
+| Phiên bản | 2.10.6 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1679,7 +1679,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.5
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.6
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1797,7 +1797,7 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 | Bảng, biểu đồ | Khối tập trung (cột «Ngoài giờ»), app ngoài VDI (không có Citrix), biểu đồ theo giờ, 7 ngày gần nhất | Biểu đồ tập trung sâu mỗi ngày có vạch mục tiêu, bảng 12 cột từng ngày, app ngoài VDI cả tuần |
 | **OT 14 ngày** | Tổng OT + mỗi ngày có OT một thanh sọc: ngày, số giờ, khoảng giờ. Ngày không OT không ghi; 14 ngày không có OT thì một dòng «14 ngày qua không có ngày nào làm ngoài giờ trong VDI.» | Như báo cáo ngày |
 | Ghi chú | Kế hoạch, output, issue, sao nhãng (kèm trung bình 14 ngày: giờ sao nhãng mỗi ngày, số lần thu nhỏ, giờ hay sao nhãng nhất), năng lượng (chấm 1–5, ghi «bot tự tính» nếu bạn chưa chấm), việc ngày mai, giờ AS400, **📌 Việc tồn sang ngày mai** (cộng dồn, ghi ngày bắt đầu tồn, mục 4.8) | Output, issue, sao nhãng, năng lượng, giờ AS400 cả tuần |
-| AI | Mục «Lời khuyên của AI» luôn có: lời AI đánh giá cuối ngày, hoặc dòng giải thích vì sao chưa có (chưa tới 17:00, `/aireview` tắt, chưa có key). Báo cáo mẫu có lời AI **mẫu** ghi rõ là mẫu | «Đánh giá tuần của AI», cùng cách |
+| AI | Mục «Lời khuyên của AI» luôn có: lời AI đánh giá cuối ngày, hoặc dòng giải thích vì sao chưa có (chưa tới 17:00, `/aireview` tắt, chưa có key). Tên từng mục AI viết (Đánh giá ngày, Việc tồn đọng...) được tô nổi thành nhãn vàng viền đậm; dòng tên mục của lời chúc cuối ngày («Chúc buổi tối», «Chúc cuối tuần») bị bỏ, chỉ giữ lời chúc. Việc bỏ do code lọc lại chữ AI (`focus/review_text.py`), không phụ thuộc AI có nghe dặn hay không, áp dụng cả cho tin Telegram. Báo cáo mẫu có lời AI **mẫu** ghi rõ là mẫu | «Đánh giá tuần của AI», cùng cách |
 | Cuối trang | «Cách tính điểm và căn cứ khoa học» (bấm để mở): công thức bằng số của ngày đó, các nghiên cứu (mục 4.1) | Như báo cáo ngày |
 | Ngày nghỉ | Chỉ 3 ô (giờ làm bù, tập trung sâu, khối dài nhất), dòng thời gian, OT 14 ngày; **không chấm điểm** | Ngày nghỉ có làm bù hiện riêng (giờ làm bù thay cho robot), không tính vào điểm TB |
 
@@ -3451,7 +3451,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.5`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.6`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

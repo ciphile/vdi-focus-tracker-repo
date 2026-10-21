@@ -77,18 +77,24 @@ def _sample_reviews(db, cfg, day):
     t = sc["tier"]
     daily = (
         "(Lời AI MẪU để xem bố cục. Báo cáo thật: AI viết theo số liệu của bạn lúc tổng kết cuối ngày.)\n\n"
-        f"1. Điểm tổng hôm nay: {sc['total']}/100 ({str(sc['ten']).replace('.', ',')}/10), mức {t['verdict']}, "
+        "Điểm tổng hôm nay\n"
+        f"{sc['total']}/100 ({str(sc['ten']).replace('.', ',')}/10), mức {t['verdict']}, "
         f"quà robot {t['grade']} {t['name']}. Điểm tổng gộp 60% điểm tập trung, 30% mức ít bị cắt ngang và 10% "
         "năng lượng bạn tự chấm. Phần kéo điểm xuống nhiều nhất là thời gian dùng máy ngoài VDI; dồn bớt chừng đó "
-        "vào VDI là điểm tăng thêm vài điểm.\n"
-        "2. Việc pending cho ngày mai: hoàn thiện spec API thanh toán (đang 60%), xin quyền truy cập DB UAT.\n"
-        "3. Mất tập trung vì đâu: chủ yếu VDI bị thu nhỏ để xem Zalo / Chrome và 2 cuộc họp ngắn không có agenda.\n"
-        "4. Cần khắc phục: VDI chậm lúc 10h, thử mở ticket với IT kèm giờ bị chậm; quyền DB UAT: gửi yêu cầu sớm "
-        "trong sáng mai để không chặn việc test.\n"
-        "5. Ngày mai cải thiện: đặt điện thoại ngoài tầm tay trong khung 09:00–10:00, giờ vàng của bạn.\n"
-        "6. \u201cKhông có gió thuận cho người không biết mình đi đâu.\u201d (Seneca, Thư 71) Bạn đã biết rõ việc đầu tiên "
-        "sáng mai, cứ thế mà đi.\n"
-        "7. Chúc bạn buổi tối ấm áp bên gia đình.")
+        "vào VDI là điểm tăng thêm vài điểm.\n\n"
+        "Việc pending cho ngày mai\n"
+        "Hoàn thiện spec API thanh toán (đang 60%), xin quyền truy cập DB UAT.\n\n"
+        "Mất tập trung\n"
+        "Chủ yếu VDI bị thu nhỏ để xem Zalo / Chrome và 2 cuộc họp ngắn không có agenda.\n\n"
+        "Cần khắc phục\n"
+        "VDI chậm lúc 10h, thử mở ticket với IT kèm giờ bị chậm; quyền DB UAT: gửi yêu cầu sớm "
+        "trong sáng mai để không chặn việc test.\n\n"
+        "Ngày mai cải thiện\n"
+        "Đặt điện thoại ngoài tầm tay trong khung 09:00–10:00, giờ vàng của bạn.\n\n"
+        "Khích lệ\n"
+        "\u201cKhông có gió thuận cho người không biết mình đi đâu.\u201d (Seneca, Thư 71) Bạn đã biết rõ việc đầu tiên "
+        "sáng mai, cứ thế mà đi.\n\n"
+        "Chúc bạn buổi tối ấm áp bên gia đình.")
     week = week_facts(db, cfg, day)["week"]
     weekly = (
         "(Lời AI MẪU để xem bố cục. Báo cáo thật: AI viết theo số liệu cả tuần lúc tổng kết tuần.)\n\n"
