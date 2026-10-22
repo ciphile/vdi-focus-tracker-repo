@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.10.6 (`focus/__init__.py`) |
+| Phiên bản | 2.10.7 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1679,7 +1679,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.6
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.7
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1788,7 +1788,7 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 |---|---|---|
 | Tạo | `/report` (gửi file qua Telegram), `/report hôm qua`, `/report 14/10` (cách gõ ngày như mục 4.15), tổng kết 17:00, `bao_cao_hom_nay.bat`, `python focus_tracker.py report [YYYY-MM-DD]`. Ngày nghỉ có làm bù: gửi cùng 🌙 tổng kết làm bù (mục 4.15) | Tổng kết tuần (thứ Sáu 17:05) và `/week` |
 | Ở đâu | `reports/focus-YYYY-MM-DD.html` | `reports/focus-week-YYYY-Www.html` (ví dụ `focus-week-2026-W42.html`) |
-| Phần đầu | **Điểm tổng** thật to + robot quà tặng trong vòng tròn chấm bi, mức (kém / HG / RG / MG / PG), thanh từng thành phần (bao nhiêu điểm, góp bao nhiêu), phần kéo điểm xuống nhiều nhất, cách tăng điểm, **thang 5 robot** (robot hôm nay được tô nổi) | **Điểm tổng trung bình tuần** + robot, thành phần trung bình, ngày cao / thấp nhất, **bộ sưu tập robot** từng ngày |
+| Phần đầu | Hình nổ đỏ góc phải ghi mức chữ (kém / chưa tốt / trung bình / tốt / xuất sắc), số điểm tổng và «/100» (tuần: điểm tổng trung bình); ngày chưa có số liệu hoặc ngày nghỉ làm bù thì hình nổ nhỏ, không chữ. **Điểm tổng** thật to + robot quà tặng trong vòng tròn chấm bi, mức (kém / HG / RG / MG / PG), thanh từng thành phần (bao nhiêu điểm, góp bao nhiêu), phần kéo điểm xuống nhiều nhất, cách tăng điểm, **thang 5 robot** (robot hôm nay được tô nổi) | **Điểm tổng trung bình tuần** + robot, thành phần trung bình, ngày cao / thấp nhất, **bộ sưu tập robot** từng ngày |
 | Ô số liệu (6 ô màu) | Tập trung sâu (so mục tiêu), trong VDI, ngoài VDI (số lần rời, **TB mỗi lần**), thu nhỏ VDI (số lần, **TB mỗi lần**), ngồi yên (số lần, **TB mỗi lần**), rời máy (số lần, **TB mỗi lần**). «TB mỗi lần» = trung bình một lần kéo dài bao lâu, không phải trung bình cả ngày | Cùng 6 ô, cộng cả tuần; thêm TB mỗi ngày |
 | Dòng «🧮 Cộng giờ làm» | Ngay dưới 6 ô: trong VDI + ngoài VDI + inactive + rời máy + không ghi = giờ làm chính thức, để tự cộng thấy đủ giờ (thu nhỏ VDI đã nằm trong ngoài VDI), cộng thêm OT của chính ngày đó nếu có | Không có |
 | Dòng «💼 Thực làm trong VDI» và «🌙 OT sau giờ báo cáo» | Thực làm trong VDI = trong giờ + OT của chính ngày đó; OT ngày làm việc trước làm sau giờ báo cáo (hoặc làm bù ngày nghỉ) được nhắc lại kèm tổng cả ngày đó, không cộng vào hôm nay | OT nằm ở đúng ngày trong bảng từng ngày |
@@ -3451,7 +3451,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.6`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.7`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

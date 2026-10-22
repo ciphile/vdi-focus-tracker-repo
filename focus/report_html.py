@@ -53,7 +53,10 @@ h3{font-size:16px;margin:0 0 6px}
 .card{background:var(--paper);border:var(--b);border-radius:14px;box-shadow:var(--sh);padding:18px;min-width:0}
 .top{position:relative;padding:8px 0 4px}
 .top>*{position:relative;z-index:1}
-.top .burst{position:absolute;z-index:0;top:-34px;right:-30px;width:170px;height:170px}
+.top .burst{position:absolute;z-index:0;top:-26px;right:-22px;width:140px;height:140px}
+.top .burst svg{width:100%;height:100%}.top .burst.small{width:90px;height:90px;top:-14px;right:-12px}
+.top .burst .bn{font:900 30px 'Segoe UI Black','Segoe UI',system-ui,sans-serif;fill:#FBF3EC;stroke:#3E322D;stroke-width:1.2px;paint-order:stroke}
+.top .burst .bl{font:800 9px 'Segoe UI',system-ui,sans-serif;fill:#FBF3EC;letter-spacing:.5px}
 .top .dots{position:absolute;z-index:0;left:-22px;top:-8px;width:220px;height:150px;opacity:.32;
 background-image:radial-gradient(var(--line) 1.4px,transparent 1.7px);background-size:8px 8px;
 -webkit-mask-image:radial-gradient(closest-side,#000,transparent);mask-image:radial-gradient(closest-side,#000,transparent)}
@@ -203,7 +206,7 @@ color:var(--mut)}
 .stats,.stats.s3,.stats.more{grid-template-columns:repeat(2,minmax(0,1fr))}.ot .orow{grid-template-columns:1fr 64px}
 .ot .orow .track{display:none}.ot .rg{grid-column:1/-1}
 .part{grid-template-columns:1fr 38px 52px}.part .track{grid-column:1/-1;grid-row:2}
-.top .burst{width:110px;height:110px;top:-20px;right:-24px}.rung svg{width:34px;height:40px}.rung{font-size:11px}
+.top .burst{width:80px;height:80px;top:-20px;right:-10px}.top .burst.small{width:56px;height:56px}.rung svg{width:34px;height:40px}.rung{font-size:11px}
 .dayrow{grid-template-columns:1fr}.dayrow>b{margin-bottom:-4px}}
 @media print{body{background:#fff}.card,.stat,.note,table{box-shadow:none}}
 """
@@ -211,8 +214,8 @@ color:var(--mut)}
 
 # ----------------------------------------------------------------------------------------------- mảnh ghép chung
 
-def burst(fill, n=14, size=170, inner=0.62, label=""):
-    """Hình nổ kiểu truyện tranh (SVG), có thể kèm chữ."""
+def burst(fill, n=14, size=170, inner=0.62, label="", content=""):
+    """Hình nổ kiểu truyện tranh (SVG), có thể kèm chữ (label) hoặc SVG tự soạn đặt giữa (content)."""
     c, pts = 50, []
     for i in range(n * 2):
         r = 48 if i % 2 == 0 else 48 * inner
@@ -221,7 +224,7 @@ def burst(fill, n=14, size=170, inner=0.62, label=""):
     txt = (f"<text x='50' y='55' text-anchor='middle' fill='#1A1A1A'>{esc(label)}</text>" if label else "")
     return (f"<svg viewBox='0 0 100 100' width='{size}' height='{size}' aria-hidden='true'>"
             f"<polygon points='{' '.join(pts)}' fill='{fill}' stroke='#3E322D' stroke-width='2.5' "
-            f"stroke-linejoin='round'/>{txt}</svg>")
+            f"stroke-linejoin='round'/>{txt}{content}</svg>")
 
 
 def page(title, body):
@@ -232,8 +235,20 @@ def page(title, body):
             f"</span></footer></main></body></html>")
 
 
-def header(kicker, title, sub):
-    return (f"<header class='top'><div class='dots'></div><div class='burst'>{burst('#C35850')}</div>"
+def header(kicker, title, sub, score=None):
+    """Đầu báo cáo. score: điểm tổng (ngày) / điểm tổng trung bình (tuần), in giữa hình nổ đỏ góc phải: mức chữ
+    (kém, chưa tốt, trung bình, tốt, xuất sắc), số điểm, "/100". Không có điểm (chưa có số liệu, ngày nghỉ làm bù):
+    hình nổ nhỏ, không chữ."""
+    if score is None:
+        star = f"<div class='burst small'>{burst('#C35850')}</div>"
+    else:
+        word = scoring.tier_of(score)["verdict"].upper()
+        fit = " textLength='50' lengthAdjust='spacingAndGlyphs'" if len(word) > 8 else ""  # TRUNG BÌNH, CHƯA TỐT
+        num = (f"<text x='50' y='35' text-anchor='middle' class='bl'{fit}>{esc(word)}</text>"
+               f"<text x='50' y='62' text-anchor='middle' class='bn'>{int(score)}</text>"
+               "<text x='50' y='75' text-anchor='middle' class='bl'>/100</text>")
+        star = f"<div class='burst'>{burst('#C35850', content=num)}</div>"
+    return (f"<header class='top'><div class='dots'></div>{star}"
             f"<div class='kicker'>{esc(kicker)}</div><h1>{esc(title)}</h1><div class='sub'>{sub}</div></header>")
 
 
@@ -477,10 +492,11 @@ def render_day(cfg, a, note, week, extra=None):
         return page(f"Tập trung {day}", body + notes_section(cfg, note, extra))
     sub = (f"⏱ Làm việc từ <b>{fmt_t(a['first'])}</b> đến <b>{fmt_t(a['last'])}</b> ({fmt_dur(a['span'])})"
            f" · mục tiêu tập trung sâu {a['goal_h']:g}h")
-    p = [header("TỔNG KẾT TẬP TRUNG", title, sub)]
+    off = a.get("off")
+    sc = None if off else scoring.total_score(a, note)
+    p = [header("TỔNG KẾT TẬP TRUNG", title, sub, sc["total"] if sc else None)]
     if a.get("leave"):
         p.append(f"<div class='banner leave'>🌴 {esc(leave_line(a))}</div>")
-    off = a.get("off")
     mb = cfg["min_focus_block_minutes"]
     goal = a["goal_h"] * 3600
     if off:
@@ -491,7 +507,6 @@ def render_day(cfg, a, note, week, extra=None):
                  + stat("deep", fmt_dur(a["deep"]), f"Tập trung sâu (khối ≥ {mb}m)", f"{len(a['blocks'])} khối")
                  + stat("vdi", fmt_dur(a["longest"]), "Khối dài nhất") + "</div>")
     else:
-        sc = scoring.total_score(a, note)
         p.append(score_section(cfg, a, note, sc))
         pct = a["deep"] / goal * 100 if goal else 0
         p.append("<div class='stats'>"
@@ -703,7 +718,8 @@ def render_week(cfg, wk):
     title = f"Tuần {int(facts['week'][-2:])} · {f0:%d/%m} → {f1:%d/%m/%Y}"
     sub = (f"📅 {len(work)} ngày làm việc có số liệu" + (f" + {len(offs)} ngày nghỉ làm bù" if offs else "")
            + f" · mục tiêu tập trung sâu {facts['goal_hours_per_day']:g}h/ngày")
-    p = [header("TỔNG KẾT TUẦN", title, sub)]
+    wavg = round(sum(x["rec"].get("total", 0) for x in work) / len(work)) if work else None
+    p = [header("TỔNG KẾT TUẦN", title, sub, wavg)]
     if not work and not offs:
         p.append("<div class='card' style='margin-top:20px'>Tuần này chưa có số liệu.</div>")
         return page(f"Tập trung tuần {facts['week']}", "".join(p))
