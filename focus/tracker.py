@@ -38,6 +38,7 @@ log = get_logger()
 SLEEP_GAP_SECONDS = 120     # 2 mẫu cách nhau lâu hơn mức này = máy vừa ngủ dậy
 PERF_EVERY_SECONDS = 600
 MAX_CONSECUTIVE_ERRORS = 720  # ~1 giờ đọc lỗi liên tục thì dừng hẳn (log + audit CRASH)
+RESTART_FLAG = "khoi_dong_lai.flag"  # khoi_dong_lai.bat tạo file này trong data_dir: tracker chốt số liệu rồi thoát
 LOCK_WAIT_SECONDS = 120       # bản mới chờ bản cũ thoát (vd. Task Scheduler bật lại đúng lúc bản cũ đang tắt)
 ALERT_COUNTERS_KEY = "alert_day_counters"  # bảng prefs: bộ đếm sao nhãng hôm nay (giữ qua lần tắt/bật)
 LINES_SAVE_TICKS = 60       # lưu câu nhắc đã dùng mỗi 60 vòng (~5 phút, mẫu 5 giây) và lúc chốt ngày / tắt
@@ -430,6 +431,13 @@ class Tracker:
             persona._DIRTY[0] = True
             log.warning("Không lưu được danh sách câu nhắc đã dùng: %s", e)
 
+    @staticmethod
+    def _drop_flag(path):
+        try:
+            os.remove(path)
+        except OSError:  # không có file (bình thường) hoặc đang bị khoá: bỏ qua
+            pass
+
     def _finish_day(self, writer):
         """Chốt số liệu của self.day: ghi nốt mẫu trong RAM + tính daily_stats."""
         self._save_alert_counters()
@@ -523,6 +531,8 @@ class Tracker:
         if golden:
             log.info("Giờ vàng: %s", golden)
         writer = SampleWriter(self.db, cfg["store_window_titles"])
+        flag = os.path.join(cfg["data_dir"], RESTART_FLAG)
+        self._drop_flag(flag)  # file sót lại từ lần trước không được làm bản mới thoát ngay
         step = cfg["sample_seconds"]
         last_report = last_perf = prev = self.mono()
         prev_wall = self.clock()
@@ -592,6 +602,11 @@ class Tracker:
                         self.submit("holidays", holidays.background_check, cfg, now_dt.date())
                     if catch_up and not off:
                         self.submit("catchup", catch_up, self.day)
+                if hhmm != minute and os.path.exists(flag):  # mỗi phút xem có yêu cầu khởi động lại không
+                    self._drop_flag(flag)
+                    log.info("Có yêu cầu khởi động lại (khoi_dong_lai): chốt số liệu rồi thoát.")
+                    audit("RESTART_REQUEST", hhmm)
+                    return "restart"
                 if hhmm != minute or recheck.is_set():  # mỗi phút (hoặc bot vừa đổi ngày nghỉ): đọc lại ghi chú
                     recheck.clear()
                     minute = hhmm

@@ -37,6 +37,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Làm thêm ngoài giờ (OT) | Tự động | Trước giờ làm, sau 17:00 chỉ cộng giờ gõ phím / rê chuột trong VDI, không tính sao nhãng; **giờ trưa không tính gì**. Sáng hôm sau báo OT kèm khoảng giờ (ví dụ 17:30–18:15) |
 | Tổng OT 14 ngày | Tổng kết 17:00, tổng kết tuần, lời chào sáng, báo cáo HTML | Tổng giờ OT và danh sách chỉ những ngày có OT, mỗi ngày bao nhiêu giờ, giờ nào |
 | Làm bù thứ 7, CN, ngày lễ | Nhấp đúp `lam_bu_ngoai_gio.bat` (Mac `.command`) | Chỉ ghi giờ làm trong VDI có gõ phím / chuột, không nhắc, không tính sao nhãng, không chấm điểm; làm xong (qua 17:00 và 30 phút không làm trong VDI) bot gửi ngay 🌙 tổng kết làm bù + file HTML; máy tắt trước đó thì sáng thứ Hai báo |
+| Khởi động lại tracker | Nhấp đúp `khoi_dong_lai.bat` (Mac `.command`) | Thay cho *End task* rồi bật lại: tracker ghi nốt số liệu vào DB rồi tự tắt, bật lại chạy ẩn, đọc lại `settings.json` / `persona.json`; không mất số đếm trong ngày |
 | Chuỗi ngày đạt mục tiêu (streak) | `/today` | Ngày nghỉ không làm đứt chuỗi |
 | Giờ vàng | `/golden` | Khung giờ tập trung tốt nhất 14 ngày qua |
 | Hiệu năng | `/perf`, `xem_cpu_ram.bat` | Đo thật trên laptop: CPU khoảng 0,07% một nhân, RAM khoảng 32 MB |
