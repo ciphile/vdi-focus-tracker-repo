@@ -6,6 +6,7 @@
             | times | energy | onoff | tone | encmode
             | leavepart (am = sáng, pm = chiều, full = cả ngày) | nudgelevel (off | nhe | vua | nghiem)
             | health (on | off | mac_dinh | số phút, cho /break, /water)
+            | vdiclient (citrix | winapp | ca_hai | mac_dinh, cho /vdi)
             | clock (giờ HH:MM, nhận cả 8h30, 8 rưỡi, 6 giờ chiều; cho /giobot) | flag (true/false)
 - writes    True nếu thao tác ghi/đổi dữ liệu: nhắn tự nhiên thì phải bấm OK xác nhận trước
 - confirm   câu xác nhận ("Mình hiểu bạn muốn ...")
@@ -24,7 +25,7 @@ from dataclasses import dataclass, field
 
 from . import ai_client, autostart, energy, messages, pace, persona, prefs
 from .analysis import analyze, daily_stats, day_goal_hours, golden_hours, off_day, streak
-from .config import DEFAULTS, STOP_AFTER_KEYS, norm_hhmm, run_window_conflict
+from .config import DEFAULTS, STOP_AFTER_KEYS, VDI_CLIENT_NAMES, norm_hhmm, run_window_conflict
 from .logs import audit, get_logger
 from .messages import golden_tip
 from .report import late_ot, summary_text, write_report
@@ -112,6 +113,27 @@ def nudge_lookup(text):
     if re.search(r"(?<![\wÀ-ỹ])nhẹ(?![\wÀ-ỹ])", (text or "").lower()) or plain in ("nhe", "muc nhe"):
         return "nhe"
     return _word_lookup(NUDGE_ON, text) or ("nhe" if re.search(r"(?<![a-z])nhac nhe(?![a-z])", plain) else None)
+
+
+VDI_WORDS = [("mac dinh", "default"), ("mac_dinh", "default"), ("default", "default"),
+             ("ca hai", "ca_hai"), ("ca_hai", "ca_hai"), ("ca 2", "ca_hai"), ("both", "ca_hai"),
+             ("windows app", "winapp"), ("window app", "winapp"), ("win app", "winapp"), ("winapp", "winapp"),
+             ("windowsapp", "winapp"), ("azure virtual desktop", "winapp"), ("azure", "winapp"), ("avd", "winapp"),
+             ("remote desktop", "winapp"), ("msrdc", "winapp"), ("citrix", "citrix")]
+
+
+def vdi_lookup(text):
+    """App VDI trong câu: "chuyển sang windows app" -> winapp, "đo citrix thôi" -> citrix, "cả hai" -> ca_hai.
+    Câu nhắc cả hai app ("từ citrix sang windows app") thì lấy app nhắc SAU CÙNG."""
+    plain = _plain(text)
+    best = None
+    for word, value in VDI_WORDS:
+        for m in re.finditer(r"(?<![a-z0-9_])" + re.escape(word) + r"(?![a-z0-9_])", plain):
+            if value in ("default", "ca_hai"):
+                return value
+            if best is None or m.start() > best[0]:
+                best = (m.start(), value)
+    return best[1] if best else None
 
 
 def health_lookup(text):
@@ -267,7 +289,7 @@ def example(action):
     """Ví dụ lệnh đúng theo kiểu tham số, để báo khi gõ sai."""
     samples = {"times": "08:10 17:35", "energy": "4", "date": "mai", "pastdate": "hôm qua", "onoff": "on", "tone": "vui_tuoi",
                "encmode": "quote", "text": "nội dung", "leavepart": "chieu", "nudgelevel": "nghiem",
-               "health": "45", "clock": "08:30 18:00"}
+               "vdiclient": "winapp", "health": "45", "clock": "08:30 18:00"}
     kinds = [p[1] for p in action.params]
     return f"{action.command} " + " ".join(samples.get(k, "") for k in kinds[:1]) if kinds else action.command
 
@@ -314,6 +336,8 @@ def parse_command_args(action, text, today=None):
             args[name] = _word_lookup(TONE_WORDS, text) or text  # không nhận ra -> validate báo lỗi
         elif kind == "nudgelevel" and text:
             args[name] = nudge_lookup(text) or text
+        elif kind == "vdiclient" and text:
+            args[name] = vdi_lookup(text) or text
         elif kind == "health" and text:
             args[name] = health_lookup(text) or text
         elif kind == "clock" and text and name == action.params[0][0]:  # cả cụm giờ bật/tắt đọc một lần
@@ -373,6 +397,11 @@ def validate(action, args):
             v = str(v) if str(v) in NUDGE_NAMES else nudge_lookup(str(v))
             if not v:
                 return None, "Mức nhắc là một trong: off (tắt), nhe (1 lần/ngày), vua, nghiem (hoặc mac_dinh)."
+            clean[name] = v
+        elif kind == "vdiclient":
+            v = str(v) if str(v) in VDI_CLIENT_NAMES or str(v) == "default" else vdi_lookup(str(v))
+            if not v:
+                return None, "Chọn một trong: citrix, winapp (Windows App), ca_hai (hoặc mac_dinh)."
             clean[name] = v
         elif kind in ("date", "pastdate"):
             try:
@@ -441,6 +470,8 @@ def _display(action, args):
                                                                            "default": "theo settings.json"}.get(v, v)
     if "level" in vals:
         vals["level"] = NUDGE_NAMES.get(vals["level"], vals["level"])
+    if "client" in vals:
+        vals["client"] = VDI_CLIENT_NAMES.get(vals["client"], "theo settings.json")
     if "tone" in vals:
         vals["tone"] = TONE_NAMES.get(vals["tone"], "theo persona.json")
     if "reset" in vals:
@@ -829,6 +860,23 @@ def _nudge(bot, args):
     if not level:
         lines += ["", "4 mức:"] + [f"/nudge {k} — {nudge_desc(cfg, k)}" for k in NUDGE_HELP]
         lines.append("/nudge mac_dinh — quay về settings.json. Câu nhắc theo giọng /style đang dùng.")
+    bot.send("\n".join(lines))
+
+
+def _vdi(bot, args):
+    client = args.get("client")
+    cfg = bot.cfg
+    if client:
+        prefs.set_vdi_client(cfg, bot.db, client)
+        audit("VDI_CLIENT", cfg["vdi_client"])
+    cur = cfg.get("vdi_client", "ca_hai")
+    lines = [f"{'Đã đổi' if client else 'Đang đo'} VDI mở bằng: {VDI_CLIENT_NAMES[cur]}."]
+    if client:
+        lines.append("Có hiệu lực ngay, không cần khởi động lại. Cửa sổ của app còn lại từ giờ tính là ngoài VDI.")
+    else:
+        lines += ["", "/vdi citrix — chỉ đo cửa sổ Citrix (Desktop Viewer)",
+                  "/vdi winapp — chỉ đo Windows App / Remote Desktop (Azure Virtual Desktop)",
+                  "/vdi ca_hai — app nào cũng đo", "/vdi mac_dinh — quay về settings.json"]
     bot.send("\n".join(lines))
 
 
@@ -1270,6 +1318,20 @@ ACTIONS = [
                      "nhac nhe", "nhac vua", "nhac 1 lan", "nhac mot lan", "1 lan moi ngay", "mot lan moi ngay",
                      "tat nhac nho", "bat nhac nho", "muc nhac", "muc do nhac", "che do nhac", "nudge",
                      "nhac ngoai vdi", "nhac nho"],
+           view_without_args=True),
+    Action("chon_app_vdi", ["/vdi"], "Đo VDI bằng Citrix hay Windows App",
+           "Chọn app mở VDI mà bot đo: citrix (chỉ Citrix), winapp (chỉ Windows App / Remote Desktop, tức Azure "
+           "Virtual Desktop), ca_hai (cả hai); không kèm gì thì xem đang đo app nào", _vdi,
+           params=[("client", "vdiclient", "app: citrix | winapp | ca_hai | mac_dinh", False)], writes=True,
+           confirm="Đổi app VDI cần đo sang: {client}",
+           keywords=["sang citrix", "qua citrix", "sang windows app", "qua windows app", "sang window app",
+                     "qua window app", "sang winapp", "qua winapp", "sang avd", "qua avd",
+                     "chuyen sang citrix", "chuyen qua citrix", "doi sang citrix", "chi do citrix", "do citrix",
+                     "dung citrix", "chuyen sang windows app", "chuyen qua windows app", "doi sang windows app",
+                     "chi do windows app", "do windows app", "dung windows app", "chuyen sang window app",
+                     "chuyen qua window app", "do window app", "dung window app", "chuyen sang winapp",
+                     "chuyen sang avd", "chuyen qua avd", "do avd", "dung avd", "azure virtual desktop",
+                     "app vdi", "loai vdi", "dang do vdi nao", "do vdi bang"],
            view_without_args=True),
     Action("canh_bao_tien_do", ["/pace", "/tiendo"], "Tiến độ hôm nay / cảnh báo tiến độ",
            "Xem tiến độ hôm nay (giờ làm thật trong VDI so với nhịp cần để đạt mục tiêu và về đúng giờ); "

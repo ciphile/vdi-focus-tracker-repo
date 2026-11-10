@@ -27,6 +27,7 @@ from .actions import (BY_COMMAND, BY_NAME, NUDGE_NAMES, bot_commands, confirm_ca
 from . import __version__
 from .analysis import (analyze, daily_stats, day_facts, fmt_dur, fmt_t, focus_score, golden_hours, off_day, ot_ranges,
                        streak, week_facts)
+from .config import VDI_CLIENT_NAMES
 from .logs import audit, get_logger
 from .messages import golden_tip
 from .report import late_ot, ot_history, ot_history_text, summary_text, week_text, write_report, write_week_report
@@ -304,6 +305,7 @@ class TelegramBot:
                      and cfg["break_reminder_minutes"] else "tắt")
                   + " · uống nước (/water): " + (f"{cfg['water_reminder_minutes']}'" if cfg.get(
                       "water_reminder_enabled", True) and cfg.get("water_reminder_minutes") else "tắt"),
+                  f"Đo VDI mở bằng: {VDI_CLIENT_NAMES[cfg.get('vdi_client', 'ca_hai')]} (/vdi)",
                   f"Nhắc sao nhãng: {NUDGE_NAMES[cfg.get('nudge_level', 'vua')]} (/nudge) · Cảnh báo tiến độ: "
                   + (f"bật, mốc {', '.join(cfg['pace_checkpoints'])}, mục tiêu {cfg['pace_target_vdi_hours']:g}h VDI"
                      if cfg.get("pace_check_enabled", True) else "tắt") + " (/pace)",

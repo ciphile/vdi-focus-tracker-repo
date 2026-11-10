@@ -58,6 +58,7 @@
   "vdi_session_processes": [
     "citrix.engineui.app.exe"
   ],
+  "vdi_client": "ca_hai",
   "vdi_title_keywords": [
     "Desktop Viewer"
   ],

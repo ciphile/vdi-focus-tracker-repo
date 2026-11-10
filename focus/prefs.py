@@ -10,17 +10,18 @@
 - energy_auto_enabled: /autoenergy on|off   bot tự tính năng lượng lúc tổng kết khi bạn chưa chấm
 - break_enabled, break_minutes: /break on|off|45   nhắc đứng dậy, vận động, tập mắt khi ngồi lâu
 - water_enabled, water_minutes: /water on|off|45   nhắc uống nước
+- vdi_client:        /vdi citrix|winapp|ca_hai   đo VDI mở bằng Citrix, bằng Windows App (Azure Virtual Desktop), hay cả hai
 - auto_start_at, auto_stop_at: /giobot 08:30 18:00   giờ bot tự bật / tự tắt (thứ 2 – thứ 6). Cũng ghi vào
   settings.json + lịch tự bật của máy (xem actions._giobot). hours_orig: giờ trong settings.json TRƯỚC lần đổi đầu
   tiên qua Telegram (để /giobot mac_dinh trả lại đúng như cũ).
 
 Muốn quay về giá trị trong file cấu hình: /style mac_dinh, /aireview mac_dinh, /nudge mac_dinh, /pace mac_dinh,
-/break mac_dinh, /water mac_dinh, /giobot mac_dinh, /autoenergy mac_dinh.
+/break mac_dinh, /water mac_dinh, /giobot mac_dinh, /autoenergy mac_dinh, /vdi mac_dinh.
 """
 import json
 
 from . import persona
-from .config import NUDGE_LEVELS, STYLES, norm_hhmm, run_window_conflict
+from .config import NUDGE_LEVELS, STYLES, VDI_CLIENTS, norm_hhmm, run_window_conflict
 from .logs import get_logger
 from .storage import get_pref, set_pref
 
@@ -72,6 +73,10 @@ def apply(cfg, db):
         v = get_pref(db, kind + "_minutes")
         if v and v.isdigit() and int(v) > 0:
             cfg[mins] = int(v)
+    cfg.setdefault("_file_vdi_client", cfg.get("vdi_client", "ca_hai"))
+    v = get_pref(db, "vdi_client")
+    if v in VDI_CLIENTS:
+        cfg["vdi_client"] = v
     tone = get_pref(db, "giong")
     if tone in persona.TONES:
         cfg["persona"] = dict(cfg.get("persona") or persona.DEFAULT, giong=tone)
@@ -208,3 +213,13 @@ def set_health(cfg, db, kind, value):
     if cfg[en] and not cfg[mins]:  # settings.json để 0 phút mà bật lên: dùng 60 phút
         set_pref(db, kind + "_minutes", "60")
         cfg[mins] = 60
+
+
+def set_vdi_client(cfg, db, mode):
+    """mode: ca_hai | citrix | winapp | default (về settings.json). Có hiệu lực ngay (tracker dùng chung cfg)."""
+    if mode == "default":
+        set_pref(db, "vdi_client", None)
+        cfg["vdi_client"] = cfg.get("_file_vdi_client") or "ca_hai"
+        return
+    set_pref(db, "vdi_client", mode)
+    cfg["vdi_client"] = mode

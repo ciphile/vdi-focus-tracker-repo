@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.10.8 (`focus/__init__.py`) |
+| Phiên bản | 2.11.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -309,7 +309,7 @@ Sửa một trong 3 file trên lúc tracker đang chạy thì phải **khởi đ
 
 | Đổi bằng | Lưu ở đâu | Có hiệu lực | Quay về như trong file |
 |---|---|---|---|
-| `/nudge`, `/break`, `/water`, `/pace`, `/aireview`, `/autoenergy`, `/encourage`, `/kinhthanh`, `/style` | CSDL `data/focus.db`, **không** ghi vào file. Đè lên giá trị trong `settings.json` / `persona.json` | Ngay | Gõ lệnh kèm `mac_dinh`, ví dụ `/nudge mac_dinh`, `/style mac_dinh` |
+| `/nudge`, `/vdi`, `/break`, `/water`, `/pace`, `/aireview`, `/autoenergy`, `/encourage`, `/kinhthanh`, `/style` | CSDL `data/focus.db`, **không** ghi vào file. Đè lên giá trị trong `settings.json` / `persona.json` | Ngay | Gõ lệnh kèm `mac_dinh`, ví dụ `/nudge mac_dinh`, `/style mac_dinh` |
 | `/giobot 08:30 18:00` | Ghi vào `settings.json` (chưa có file thì tự tạo, bản cũ lưu `settings.json.bak`) và lịch tự bật của máy | Ngay | `/giobot mac_dinh` |
 | Tên Telegram của bạn | CSDL. Bot tự lấy khi bạn nhắn; AI dùng tên này khi `persona.json` để trống `ten` | Ngay | — |
 | Chat ID | **Không** tự ghi. Bot và cửa sổ đen chỉ in số ra, bạn chép vào `secrets.env` (bước 5) | — | — |
@@ -457,6 +457,7 @@ Không có `settings.json` thì app dùng mặc định dưới đây. Việc n�
 | Công việc của bạn, gửi kèm **mọi** lần gọi AI | Lập trình viên/BA Life Asia trên IBM i (AS400), COBOL, CL, DB2 for i, làm qua VDI Citrix | — | `work_context` |
 | Lời khích lệ đầu ngày, buổi chiều (xem khung ngay dưới bảng này) | Châm ngôn danh nhân, hiền triết + vì gia đình (**Kinh Thánh tắt**) | `/kinhthanh` (đổi qua lại Kinh Thánh / danh ngôn), `/encourage quote`, `/encourage off` | `encouragement_styles`, `encouragement_enabled` |
 | Mức nhắc khi sao nhãng (**bước 11**) | Vừa | `/nudge nhe`, `/nudge nghiem`, `/nudge off` | `nudge_level` |
+| App mở VDI mà bot đo (mục 4.2) | Cả hai: Citrix và Windows App | `/vdi citrix`, `/vdi winapp`, `/vdi ca_hai` | `vdi_client` |
 | Nhắc rời máy | Sau 15 phút | — | `away_alert_minutes` |
 | Nhắc đứng dậy | Mỗi 60 phút | `/break 45`, `/break off` | `break_reminder_minutes`, `break_reminder_enabled` |
 | Nhắc uống nước | **Tắt** (cài lần đầu) | `/water on`, `/water 45` | `water_reminder_enabled`, `water_reminder_minutes` |
@@ -758,7 +759,7 @@ Mỗi tính năng: làm gì · bật/tắt · khoá cấu hình · tình huống
 | # | Tính năng | Lệnh | Bật/tắt nhanh | Khoá settings.json chính |
 |---|---|---|---|---|
 | 4.1 | Đo tập trung, điểm tập trung, **điểm tổng + robot quà tặng**, streak, xem lại kế hoạch / năng lượng / ngày cũ | `/today [ngày]` `/score` | — | `daily_focus_goal_hours`, `min_focus_block_minutes` |
-| 4.2 | Nhận trạng thái cửa sổ VDI | — | — | `vdi_processes`, `vdi_session_processes`, `vdi_browser_title_keywords` |
+| 4.2 | Nhận trạng thái cửa sổ VDI; chọn đo Citrix hay Windows App | `/vdi` | — | `vdi_client`, `vdi_processes`, `vdi_session_processes`, `vdi_browser_title_keywords` |
 | 4.3 | Nhắc khi sao nhãng | `/nudge` | `/nudge off` | `nudge_level` |
 | 4.4 | Rời máy / quay lại, VDI tự đóng | — | `away_alert_minutes: 0`, `vdi_closed_alert: false` | `away_alert_minutes`, `vdi_closed_alert` |
 | 4.5 | Nhắc cất điện thoại, phóng to VDI | — | `/nudge off` | `phone_pattern_count`, `fullscreen_tip_minutes` |
@@ -1145,6 +1146,51 @@ Khoá dạng danh sách trong `settings.json` **thay cả danh sách mặc đị
 > Không có dòng này trong `settings.json` = dùng mặc định `["AZ-WIN11-SGLIFE"]`. Sau khi sửa, mở VDI trong trình duyệt rồi gõ `/status`: dòng «nhận VDI qua» có «tab trình duyệt» là đã bật.
 
 Mở trang StoreWeb trong trình duyệt nhưng bấm desktop mà nó mở bằng app Citrix (file `.ica`) thì là cột trái, không cần cấu hình. **Khuyên dùng app Citrix**: đo chính xác hơn, VDI cũng mượt hơn.
+
+#### Citrix hay Windows App: chọn app mở VDI mà bot đo (`/vdi`)
+
+VDI có thể mở bằng hai loại app. Bot nhận ra theo **tên chương trình** của cửa sổ:
+
+| App mở VDI | Tên chương trình (Windows) | Tên app (Mac) | Tiêu đề cửa sổ |
+|---|---|---|---|
+| Citrix Workspace | `citrix.desktopviewer.app.exe` (khung), `citrix.engineui.app.exe` (mặt phiên), bản cũ `cdviewer.exe`, `wfica32.exe` | `Citrix Viewer` | «TÊN-MÁY-ẢO - Desktop Viewer» |
+| Windows App (Azure Virtual Desktop, viết tắt AVD) và Remote Desktop | `msrdc.exe` (trong Task Manager hiện tên «Remote Desktop», nằm trong nhóm «Windows App»), `mstsc.exe` | `Windows App`, `Microsoft Remote Desktop` | Tên máy ảo, ví dụ «may-ao-01.cong-ty.example» |
+
+Cửa sổ danh sách máy của Windows App trên Windows (mục «Devices», chương trình khác với `msrdc.exe`) **không** tính là VDI: chỉ cửa sổ phiên làm việc mới tính.
+
+| Lệnh | Bot đo | Dùng khi |
+|---|---|---|
+| `/vdi ca_hai` (mặc định) | Cả cửa sổ Citrix lẫn cửa sổ Windows App | Chỉ dùng một loại, hoặc đang chuyển dần từ loại này sang loại kia |
+| `/vdi citrix` | Chỉ Citrix. Cửa sổ Windows App tính là **ngoài VDI** | Làm việc trên Citrix, còn Windows App mở việc khác |
+| `/vdi winapp` | Chỉ Windows App / Remote Desktop. Cửa sổ Citrix tính là **ngoài VDI** | Công ty đã chuyển sang Azure Virtual Desktop |
+| `/vdi` | Xem đang đo app nào | |
+| `/vdi mac_dinh` | Quay về giá trị `vdi_client` trong `settings.json` | |
+
+```
+Cửa sổ đang xét là của chương trình nào?
+        |
+        +-- họ Citrix (tên bắt đầu bằng "citrix", cdviewer.exe, wfica32.exe)
+        |       /vdi citrix hoặc ca_hai  -> tính là VDI
+        |       /vdi winapp              -> KHÔNG tính (kể cả mặt phiên, app Citrix tên lạ, nhận theo tiêu đề)
+        |
+        +-- họ Windows App (msrdc.exe, mstsc.exe; Mac: Windows App, Microsoft Remote Desktop)
+        |       /vdi winapp hoặc ca_hai  -> tính là VDI
+        |       /vdi citrix              -> KHÔNG tính
+        |
+        +-- chương trình bạn tự thêm vào vdi_processes (không thuộc hai họ trên)
+                chế độ nào cũng tính là VDI
+```
+
+| Câu hỏi | Trả lời |
+|---|---|
+| Đổi xong có phải khởi động lại không? | Không. Có hiệu lực ở lần lấy mẫu kế tiếp (5 giây). Lưu trong CSDL nên tắt / bật tracker vẫn giữ |
+| Nhắn tự nhiên được không? | Được: «chuyển sang windows app», «chuyển qua citrix», «đang đo vdi nào?». Câu đổi thì bot hỏi lại, bấm ✅ OK |
+| Thu nhỏ, ra ngoài VDI, VDI bị ngắt có đo khác đi không? | Không. Mọi quy tắc ở mục này giữ nguyên, chỉ khác **cửa sổ nào** được coi là VDI |
+| Số liệu những ngày trước có đổi không? | Không. Mẫu đã ghi giữ nguyên trạng thái lúc ghi |
+| Tab VDI trong trình duyệt? | Không phụ thuộc `/vdi`, vẫn theo `vdi_browser_title_keywords` |
+| Xem ở đâu? | `/status`, dòng «Đo VDI mở bằng: …» |
+
+Mac: Windows App chỉ có một tên app cho cả cửa sổ danh sách máy lẫn cửa sổ phiên, nên trên Mac cửa sổ danh sách máy cũng được tính là VDI.
 
 ### 4.3 Nhắc khi sao nhãng (`/nudge`)
 
@@ -1671,6 +1717,7 @@ Ghi chú: kế hoạch ✗ · output 0 · issue 0 · việc sáng mai ✗
 ⚙️ CÀI ĐẶT
 Bot bật 08:00 – tắt 23:59 (thứ 2 – thứ 6) · /giobot
 Giờ làm 08:00–17:00, trưa 11:15–12:30 · rời máy 15' · nhắc nghỉ (/break): 60' · uống nước (/water): 60'
+Đo VDI mở bằng: cả hai (Citrix và Windows App) (/vdi)
 Nhắc sao nhãng: vừa (1 lần mỗi lần sao nhãng) (/nudge) · Cảnh báo tiến độ: bật, mốc 10:30, 14:00, 15:30, mục tiêu 6h VDI (/pace)
 AI đánh giá ngày/tuần: bật (/aireview) · Khích lệ tự động: bật [bible] (/encourage)
 Giọng: than_mat (/style) · Hỏi AI: tắt (/ask) · Gọi bạn là “bạn”
@@ -1680,7 +1727,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.10.8
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.11.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1889,6 +1936,7 @@ Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `
 | Action | Làm gì | Ví dụ |
 |---|---|---|
 | `bat_tat_kinh_thanh` | Nút gạt Kinh Thánh: on = lời chào buổi sáng và lời khích lệ dùng Kinh Thánh, off (mặc định khi cài lần đầu) = mọi tin chỉ dùng châm ngôn người thành đạt, danh nhân xưa (cho người không theo đạo); không kèm gì thì đảo trạng thái hiện tại |  |
+| `chon_app_vdi` | Chọn app mở VDI mà bot đo: citrix (chỉ Citrix), winapp (chỉ Windows App / Remote Desktop, tức Azure Virtual Desktop), ca_hai (cả hai); không kèm gì thì xem đang đo app nào |  |
 | `tro_chuyen` | Tâm sự, than mệt, chán, cần động viên, hoặc tin nhắn không thuộc thao tác nào ở trên | «mệt quá» |
 
 ### 5.2 Lệnh trên máy (CLI)
@@ -2962,7 +3010,7 @@ Nhiệm vụ: đọc tin nhắn tiếng Việt và chọn ĐÚNG MỘT action tr
 Chỉ trả về JSON một dòng, không giải thích, không markdown.
 
 Hôm nay là 2026-10-14 (thứ Tư). Danh sách action:
-[{"action": "xem_hom_nay", "mo_ta": "Xem số liệu tập trung, điểm, chuỗi ngày, kế hoạch đầu ngày, năng lượng, output, issue của hôm nay hoặc một ngày đã qua", "tham_so": {"day": "pastdate: ngày đã qua muốn xem lại (bỏ trống = hôm nay) (không bắt buộc)"}}, {"action": "gui_bao_cao", "mo_ta": "Gửi file báo cáo HTML chi tiết của hôm nay hoặc một ngày đã qua", "tham_so": {"day": "pastdate: ngày đã qua muốn xem lại (bỏ trống = hôm nay) (không bắt buộc)"}}, {"action": "xem_tuan", "mo_ta": "Tổng kết tuần: giờ vàng, ngày tốt/kém nhất, issue lặp lại", "tham_so": {}}, {"action": "xem_gio_vang", "mo_ta": "Xem khung giờ tập trung tốt nhất 14 ngày gần nhất", "tham_so": {}}, {"action": "xem_trang_thai", "mo_ta": "Lúc này đang trong VDI hay ngoài, idle bao lâu", "tham_so": {}}, {"action": "ghi_ke_hoach", "mo_ta": "Ghi kế hoạch / 3 việc quan trọng hôm nay (không có nội dung thì bot hỏi từng câu)", "tham_so": {"text": "text: nội dung kế hoạch (không bắt buộc)"}}, {"action": "ghi_output", "mo_ta": "Ghi nhanh một việc vừa làm xong (output)", "tham_so": {"text": "text: việc đã xong"}}, {"action": "ghi_issue", "mo_ta": "Ghi ngay một issue, blocker, việc bị chặn (VDI chậm, thiếu quyền, chờ người khác)", "tham_so": {"text": "text: nội dung issue"}}, {"action": "ghi_phan_tam", "mo_ta": "Ghi điều làm mất tập trung hoặc lý do vừa bị gián đoạn hôm nay (con khóc, việc nhà, họp đột xuất, người hỏi chuyện, điện thoại...)", "tham_so": {"text": "text: điều làm mất tập trung"}}, {"action": "ghi_viec_ngay_mai", "mo_ta": "Ghi việc đầu tiên sẽ làm sáng mai (sáng mai bot nhắc lại)", "tham_so": {"text": "text: nội dung"}}, {"action": "ghi_nang_luong", "mo_ta": "Ghi mức năng lượng hôm nay từ 1 đến 5", "tham_so": {"energy": "energy: mức năng lượng 1–5"}}, {"action": "ghi_gio_as400", "mo_ta": "Ghi giờ vào và ra AS400 hôm nay (HH:MM). Có thể gửi ảnh spooled file thay vì gõ", "tham_so": {"start": "HH:MM giờ vào", "end": "HH:MM giờ ra (không bắt buộc)"}}, {"action": "tong_ket_ngay", "mo_ta": "Bắt đầu hỏi tổng kết cuối ngày từng câu (output, issue, AS400, việc mai, năng lượng)", "tham_so": {}}, {"action": "bao_nghi", "mo_ta": "Báo một ngày nghỉ (hôm nay hoặc ngày khác) để bot không nhắc gì ngày đó", "tham_so": {"day": "date: ngày nghỉ (không bắt buộc)", "reason": "text: lý do (không bắt buộc)"}}, {"action": "nghi_phep", "mo_ta": "Báo nghỉ phép nửa ngày buổi sáng, nửa ngày buổi chiều, hoặc cả ngày (hôm nay hoặc ngày khác): bot không theo dõi, không nhắc trong phần nghỉ; nghỉ nửa ngày thì mục tiêu còn một nửa", "tham_so": {"part": "leavepart: buổi nghỉ: am (buổi sáng) | pm (buổi chiều) | full (cả ngày, mặc định) (không bắt buộc)", "day": "date: ngày nghỉ (mặc định hôm nay) (không bắt buộc)", "reason": "text: lý do (không bắt buộc)"}}, {"action": "bao_di_lam", "mo_ta": "Huỷ ngày nghỉ hoặc nghỉ phép (cả ngày hay nửa ngày) đã báo, làm việc lại bình thường", "tham_so": {"day": "date: ngày (không bắt buộc)"}}, {"action": "tam_dung", "mo_ta": "Tạm dừng theo dõi (ví dụ việc riêng)", "tham_so": {}}, {"action": "tiep_tuc", "mo_ta": "Theo dõi lại sau khi tạm dừng", "tham_so": {}}, {"action": "xin_cau_dong_luc", "mo_ta": "Xin một câu nói truyền động lực", "tham_so": {}}, {"action": "xin_cau_kinh_thanh", "mo_ta": "Xin một câu Kinh Thánh khích lệ", "tham_so": {}}, {"action": "xem_ai", "mo_ta": "Xem AI đang dùng model nào, đã gọi bao nhiêu lần", "tham_so": {}}, {"action": "xoa_cache_ai", "mo_ta": "Xoá cache model AI và các nhận xét AI đã lưu", "tham_so": {}}, {"action": "xem_hieu_nang", "mo_ta": "Xem tracker tốn bao nhiêu CPU/RAM", "tham_so": {}}, {"action": "bat_tat_ai_danh_gia", "mo_ta": "Bật hoặc tắt việc AI tự đọc báo cáo và nhắn đánh giá cuối ngày, cuối tuần; không kèm on/off thì xem trạng thái", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "hoi_ai", "mo_ta": "Hỏi AI bất kỳ câu gì (tập trung, công việc, AS400, sức khoẻ, thu nhập...) và nhận câu trả lời; hoặc bật/tắt chế độ hỏi AI (text = on / off); không kèm gì thì xem trạng thái", "tham_so": {"text": "text: câu hỏi, hoặc on / off (không bắt buộc)"}}, {"action": "cai_khich_le", "mo_ta": "Bật/tắt tự gửi lời khích lệ đầu ngày, buổi chiều; chọn chỉ danh ngôn (không Kinh Thánh), chỉ Kinh Thánh, hoặc cả hai; không kèm lựa chọn thì xem cài đặt hiện tại", "tham_so": {"mode": "encmode: on | off | quote | bible | both (không bắt buộc)"}}, {"action": "bat_tat_kinh_thanh", "mo_ta": "Nút gạt Kinh Thánh: on = lời chào buổi sáng và lời khích lệ dùng Kinh Thánh, off (mặc định khi cài lần đầu) = mọi tin chỉ dùng châm ngôn người thành đạt, danh nhân xưa (cho người không theo đạo); không kèm gì thì đảo trạng thái hiện tại", "tham_so": {"state": "onoff: on (Kinh Thánh) / off (danh ngôn) (không bắt buộc)"}}, {"action": "doi_giong", "mo_ta": "Đổi giọng nói của bot và AI: than_mat, vui_tuoi, hai_huoc, sep_kho_tinh; không kèm giọng thì xem giọng hiện tại", "tham_so": {"tone": "tone: giọng: than_mat | vui_tuoi | hai_huoc | sep_kho_tinh (không bắt buộc)"}}, {"action": "doi_muc_nhac", "mo_ta": "Đổi mức nhắc khi sao nhãng (ra ngoài VDI, thu nhỏ VDI): off (tắt hẳn), nhe (1 lần/ngày), vua (1 lần mỗi lần sao nhãng), nghiem (nhắc lặp, gắt hơn); không kèm mức thì xem mức hiện tại", "tham_so": {"level": "nudgelevel: mức: off | nhe | vua | nghiem | mac_dinh (không bắt buộc)"}}, {"action": "canh_bao_tien_do", "mo_ta": "Xem tiến độ hôm nay (giờ làm thật trong VDI so với nhịp cần để đạt mục tiêu và về đúng giờ); on/off bật tắt cảnh báo tiến độ tự động ở các mốc trong ngày", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "tu_tinh_nang_luong", "mo_ta": "Xem / bật / tắt việc bot tự tính năng lượng 1–5 lúc tổng kết cuối ngày khi bạn chưa chấm, dựa trên số liệu tập trung (càng tập trung sâu lâu càng cạn)", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "nhac_nghi_ngoi", "mo_ta": "Bật/tắt nhắc đứng dậy đi lại, vươn vai, tập mắt (chống cận) khi ngồi làm liên tục lâu, hoặc đổi số phút; không kèm gì thì xem cài đặt", "tham_so": {"every": "health: on | off | số phút (ví dụ 45) | mac_dinh (không bắt buộc)"}}, {"action": "nhac_uong_nuoc", "mo_ta": "Bật/tắt nhắc uống nước trong giờ làm, hoặc đổi số phút; không kèm gì thì xem cài đặt", "tham_so": {"every": "health: on | off | số phút (ví dụ 45) | mac_dinh (không bắt buộc)"}}, {"action": "gio_bot", "mo_ta": "Xem hoặc đổi giờ bot (tracker) tự bật và tự tắt mỗi ngày làm việc thứ 2 – thứ 6: start = giờ bật HH:MM, stop = giờ tắt HH:MM, reset = true để về giờ trong settings.json; không kèm gì thì xem giờ hiện tại", "tham_so": {"start": "clock: giờ BẬT bot HH:MM (24h) (không bắt buộc)", "stop": "clock: giờ TẮT bot HH:MM (24h) (không bắt buộc)", "time": "clock: giờ HH:MM khi câu không nói rõ là bật hay tắt (không bắt buộc)", "reset": "flag: true = về giờ trong settings.json (không bắt buộc)"}}, {"action": "huy", "mo_ta": "Huỷ thao tác đang chờ xác nhận hoặc đang hỏi dở", "tham_so": {}}, {"action": "tro_giup", "mo_ta": "Xem danh sách lệnh", "tham_so": {}}, {"action": "tro_chuyen", "mo_ta": "Tâm sự, than mệt, chán, cần động viên, hoặc tin nhắn không thuộc thao tác nào ở trên", "tham_so": {"text": "text: tin nhắn (không bắt buộc)"}}]
+[{"action": "xem_hom_nay", "mo_ta": "Xem số liệu tập trung, điểm, chuỗi ngày, kế hoạch đầu ngày, năng lượng, output, issue của hôm nay hoặc một ngày đã qua", "tham_so": {"day": "pastdate: ngày đã qua muốn xem lại (bỏ trống = hôm nay) (không bắt buộc)"}}, {"action": "gui_bao_cao", "mo_ta": "Gửi file báo cáo HTML chi tiết của hôm nay hoặc một ngày đã qua", "tham_so": {"day": "pastdate: ngày đã qua muốn xem lại (bỏ trống = hôm nay) (không bắt buộc)"}}, {"action": "xem_tuan", "mo_ta": "Tổng kết tuần: giờ vàng, ngày tốt/kém nhất, issue lặp lại", "tham_so": {}}, {"action": "xem_gio_vang", "mo_ta": "Xem khung giờ tập trung tốt nhất 14 ngày gần nhất", "tham_so": {}}, {"action": "xem_trang_thai", "mo_ta": "Lúc này đang trong VDI hay ngoài, idle bao lâu", "tham_so": {}}, {"action": "ghi_ke_hoach", "mo_ta": "Ghi kế hoạch / 3 việc quan trọng hôm nay (không có nội dung thì bot hỏi từng câu)", "tham_so": {"text": "text: nội dung kế hoạch (không bắt buộc)"}}, {"action": "ghi_output", "mo_ta": "Ghi nhanh một việc vừa làm xong (output)", "tham_so": {"text": "text: việc đã xong"}}, {"action": "ghi_issue", "mo_ta": "Ghi ngay một issue, blocker, việc bị chặn (VDI chậm, thiếu quyền, chờ người khác)", "tham_so": {"text": "text: nội dung issue"}}, {"action": "ghi_phan_tam", "mo_ta": "Ghi điều làm mất tập trung hoặc lý do vừa bị gián đoạn hôm nay (con khóc, việc nhà, họp đột xuất, người hỏi chuyện, điện thoại...)", "tham_so": {"text": "text: điều làm mất tập trung"}}, {"action": "ghi_viec_ngay_mai", "mo_ta": "Ghi việc đầu tiên sẽ làm sáng mai (sáng mai bot nhắc lại)", "tham_so": {"text": "text: nội dung"}}, {"action": "ghi_nang_luong", "mo_ta": "Ghi mức năng lượng hôm nay từ 1 đến 5", "tham_so": {"energy": "energy: mức năng lượng 1–5"}}, {"action": "ghi_gio_as400", "mo_ta": "Ghi giờ vào và ra AS400 hôm nay (HH:MM). Có thể gửi ảnh spooled file thay vì gõ", "tham_so": {"start": "HH:MM giờ vào", "end": "HH:MM giờ ra (không bắt buộc)"}}, {"action": "tong_ket_ngay", "mo_ta": "Bắt đầu hỏi tổng kết cuối ngày từng câu (output, issue, AS400, việc mai, năng lượng)", "tham_so": {}}, {"action": "bao_nghi", "mo_ta": "Báo một ngày nghỉ (hôm nay hoặc ngày khác) để bot không nhắc gì ngày đó", "tham_so": {"day": "date: ngày nghỉ (không bắt buộc)", "reason": "text: lý do (không bắt buộc)"}}, {"action": "nghi_phep", "mo_ta": "Báo nghỉ phép nửa ngày buổi sáng, nửa ngày buổi chiều, hoặc cả ngày (hôm nay hoặc ngày khác): bot không theo dõi, không nhắc trong phần nghỉ; nghỉ nửa ngày thì mục tiêu còn một nửa", "tham_so": {"part": "leavepart: buổi nghỉ: am (buổi sáng) | pm (buổi chiều) | full (cả ngày, mặc định) (không bắt buộc)", "day": "date: ngày nghỉ (mặc định hôm nay) (không bắt buộc)", "reason": "text: lý do (không bắt buộc)"}}, {"action": "bao_di_lam", "mo_ta": "Huỷ ngày nghỉ hoặc nghỉ phép (cả ngày hay nửa ngày) đã báo, làm việc lại bình thường", "tham_so": {"day": "date: ngày (không bắt buộc)"}}, {"action": "tam_dung", "mo_ta": "Tạm dừng theo dõi (ví dụ việc riêng)", "tham_so": {}}, {"action": "tiep_tuc", "mo_ta": "Theo dõi lại sau khi tạm dừng", "tham_so": {}}, {"action": "xin_cau_dong_luc", "mo_ta": "Xin một câu nói truyền động lực", "tham_so": {}}, {"action": "xin_cau_kinh_thanh", "mo_ta": "Xin một câu Kinh Thánh khích lệ", "tham_so": {}}, {"action": "xem_ai", "mo_ta": "Xem AI đang dùng model nào, đã gọi bao nhiêu lần", "tham_so": {}}, {"action": "xoa_cache_ai", "mo_ta": "Xoá cache model AI và các nhận xét AI đã lưu", "tham_so": {}}, {"action": "xem_hieu_nang", "mo_ta": "Xem tracker tốn bao nhiêu CPU/RAM", "tham_so": {}}, {"action": "bat_tat_ai_danh_gia", "mo_ta": "Bật hoặc tắt việc AI tự đọc báo cáo và nhắn đánh giá cuối ngày, cuối tuần; không kèm on/off thì xem trạng thái", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "hoi_ai", "mo_ta": "Hỏi AI bất kỳ câu gì (tập trung, công việc, AS400, sức khoẻ, thu nhập...) và nhận câu trả lời; hoặc bật/tắt chế độ hỏi AI (text = on / off); không kèm gì thì xem trạng thái", "tham_so": {"text": "text: câu hỏi, hoặc on / off (không bắt buộc)"}}, {"action": "cai_khich_le", "mo_ta": "Bật/tắt tự gửi lời khích lệ đầu ngày, buổi chiều; chọn chỉ danh ngôn (không Kinh Thánh), chỉ Kinh Thánh, hoặc cả hai; không kèm lựa chọn thì xem cài đặt hiện tại", "tham_so": {"mode": "encmode: on | off | quote | bible | both (không bắt buộc)"}}, {"action": "bat_tat_kinh_thanh", "mo_ta": "Nút gạt Kinh Thánh: on = lời chào buổi sáng và lời khích lệ dùng Kinh Thánh, off (mặc định khi cài lần đầu) = mọi tin chỉ dùng châm ngôn người thành đạt, danh nhân xưa (cho người không theo đạo); không kèm gì thì đảo trạng thái hiện tại", "tham_so": {"state": "onoff: on (Kinh Thánh) / off (danh ngôn) (không bắt buộc)"}}, {"action": "doi_giong", "mo_ta": "Đổi giọng nói của bot và AI: than_mat, vui_tuoi, hai_huoc, sep_kho_tinh; không kèm giọng thì xem giọng hiện tại", "tham_so": {"tone": "tone: giọng: than_mat | vui_tuoi | hai_huoc | sep_kho_tinh (không bắt buộc)"}}, {"action": "doi_muc_nhac", "mo_ta": "Đổi mức nhắc khi sao nhãng (ra ngoài VDI, thu nhỏ VDI): off (tắt hẳn), nhe (1 lần/ngày), vua (1 lần mỗi lần sao nhãng), nghiem (nhắc lặp, gắt hơn); không kèm mức thì xem mức hiện tại", "tham_so": {"level": "nudgelevel: mức: off | nhe | vua | nghiem | mac_dinh (không bắt buộc)"}}, {"action": "chon_app_vdi", "mo_ta": "Chọn app mở VDI mà bot đo: citrix (chỉ Citrix), winapp (chỉ Windows App / Remote Desktop, tức Azure Virtual Desktop), ca_hai (cả hai); không kèm gì thì xem đang đo app nào", "tham_so": {"client": "vdiclient: app: citrix | winapp | ca_hai | mac_dinh (không bắt buộc)"}}, {"action": "canh_bao_tien_do", "mo_ta": "Xem tiến độ hôm nay (giờ làm thật trong VDI so với nhịp cần để đạt mục tiêu và về đúng giờ); on/off bật tắt cảnh báo tiến độ tự động ở các mốc trong ngày", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "tu_tinh_nang_luong", "mo_ta": "Xem / bật / tắt việc bot tự tính năng lượng 1–5 lúc tổng kết cuối ngày khi bạn chưa chấm, dựa trên số liệu tập trung (càng tập trung sâu lâu càng cạn)", "tham_so": {"state": "onoff: on (bật) / off (tắt) (không bắt buộc)"}}, {"action": "nhac_nghi_ngoi", "mo_ta": "Bật/tắt nhắc đứng dậy đi lại, vươn vai, tập mắt (chống cận) khi ngồi làm liên tục lâu, hoặc đổi số phút; không kèm gì thì xem cài đặt", "tham_so": {"every": "health: on | off | số phút (ví dụ 45) | mac_dinh (không bắt buộc)"}}, {"action": "nhac_uong_nuoc", "mo_ta": "Bật/tắt nhắc uống nước trong giờ làm, hoặc đổi số phút; không kèm gì thì xem cài đặt", "tham_so": {"every": "health: on | off | số phút (ví dụ 45) | mac_dinh (không bắt buộc)"}}, {"action": "gio_bot", "mo_ta": "Xem hoặc đổi giờ bot (tracker) tự bật và tự tắt mỗi ngày làm việc thứ 2 – thứ 6: start = giờ bật HH:MM, stop = giờ tắt HH:MM, reset = true để về giờ trong settings.json; không kèm gì thì xem giờ hiện tại", "tham_so": {"start": "clock: giờ BẬT bot HH:MM (24h) (không bắt buộc)", "stop": "clock: giờ TẮT bot HH:MM (24h) (không bắt buộc)", "time": "clock: giờ HH:MM khi câu không nói rõ là bật hay tắt (không bắt buộc)", "reset": "flag: true = về giờ trong settings.json (không bắt buộc)"}}, {"action": "huy", "mo_ta": "Huỷ thao tác đang chờ xác nhận hoặc đang hỏi dở", "tham_so": {}}, {"action": "tro_giup", "mo_ta": "Xem danh sách lệnh", "tham_so": {}}, {"action": "tro_chuyen", "mo_ta": "Tâm sự, than mệt, chán, cần động viên, hoặc tin nhắn không thuộc thao tác nào ở trên", "tham_so": {"text": "text: tin nhắn (không bắt buộc)"}}]
 
 Tin nhắn của người dùng: """mai làm tiếp job đối soát"""
 
@@ -3058,13 +3106,14 @@ Mọi thứ nằm trong thư mục app, trên máy bạn (`data_dir` = `data`, `
 | `ask_mode` | `/ask on/off` |
 | `tg_name` | Tên Telegram của bạn (AI gọi tên này nếu persona chưa có `ten`) |
 | `nudge_level` | `/nudge` |
+| `vdi_client` | `/vdi` |
 | `pace_check_enabled` | `/pace on/off` |
 | `energy_auto_enabled` | `/autoenergy on/off` |
 | `break_enabled`, `break_minutes`, `water_enabled`, `water_minutes` | `/break`, `/water` |
 | `auto_start_at`, `auto_stop_at`, `hours_orig` | `/giobot` (`hours_orig` = giờ trong settings.json trước lần đổi đầu, để `mac_dinh` trả lại) |
 | `ai_review_retry` | Đánh giá AI đang chờ gửi lại |
 
-Đổi qua Telegram rồi muốn về giá trị trong file: `/style mac_dinh`, `/aireview mac_dinh`, `/encourage mac_dinh`, `/nudge mac_dinh`, `/pace mac_dinh`, `/break mac_dinh`, `/water mac_dinh`, `/giobot mac_dinh`.
+Đổi qua Telegram rồi muốn về giá trị trong file: `/style mac_dinh`, `/aireview mac_dinh`, `/encourage mac_dinh`, `/nudge mac_dinh`, `/pace mac_dinh`, `/break mac_dinh`, `/water mac_dinh`, `/giobot mac_dinh`, `/vdi mac_dinh`.
 
 ---
 
@@ -3166,6 +3215,7 @@ Không bắt buộc. Chỉ cần ghi dòng muốn đổi; dòng không có dùng
 | `min_focus_block_minutes` | `20` | Khối tập trung sâu tối thiểu |
 | `vdi_processes` | `["citrix.desktopviewer.app.exe", "cdviewer.exe", "wfica32.exe", "msrdc.exe", "mstsc.exe", "citrix viewer", "windows app", "microsoft remote desktop"]` | Process / app của **khung** VDI. Ghi trong `settings.json` là thay cả danh sách: chép đủ tên mặc định rồi thêm tên mới |
 | `vdi_session_processes` | `["citrix.engineui.app.exe"]` | Process của cửa sổ **mặt phiên** Citrix (tool window nhận phím khi gõ trong VDI, phủ khung Desktop Viewer). Đang hiện thật, đủ lớn và khung không thu nhỏ thì tính là cửa sổ VDI. Đã có sẵn trong app, **không cần** thêm vào `settings.json`; chỉ thêm khi Citrix đổi tên (mục 4.2) |
+| `vdi_client` | `"ca_hai"` | Đo VDI mở bằng app nào: `ca_hai` / `citrix` / `winapp` (Windows App, Azure Virtual Desktop; mục 4.2). Đổi nhanh `/vdi` |
 | `vdi_title_keywords` | `["Desktop Viewer"]` | Từ khoá tiêu đề. Dùng cho app Citrix tên lạ (Citrix đổi tên file khung) và khi không đọc được tên process |
 | `vdi_browser_title_keywords` | `["AZ-WIN11-SGLIFE"]` | Citrix trong trình duyệt: từ khoá tiêu đề tab VDI (phần đầu tên máy ảo công ty). Máy ảo tên khác thì sửa, `[]` = tắt (mục 4.2) |
 | `browser_processes` | `["chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe", "google chrome", "microsoft edge", "safari", "firefox", "arc", "brave browser"]` | Trình duyệt được xét khi bật dòng trên |
@@ -3452,7 +3502,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.10.8`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.11.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

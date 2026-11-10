@@ -23,6 +23,7 @@ import os
 import sys
 import time
 
+from .config import vdi_client_allows
 from .logs import get_logger
 
 LOCK_SCREEN_PROCS = ("logonui.exe", "lockapp.exe")
@@ -67,7 +68,9 @@ def browser_title_is_vdi(title, keywords):
 
 def _modes(cfg):
     on = bool(cfg.get("vdi_browser_title_keywords"))
-    return "app Citrix" + (" + tab trình duyệt (Citrix HTML5)" if on else "")
+    app = {"citrix": "app Citrix", "winapp": "Windows App (Remote Desktop)"}.get(
+        cfg.get("vdi_client", "ca_hai"), "app Citrix + Windows App (Remote Desktop)")
+    return app + (" + tab trình duyệt" if on else "")
 
 
 # ------------------------------------------------------------ Windows
@@ -264,6 +267,7 @@ class WindowsProbe:
         self.browsers = set(cfg.get("browser_processes", DEFAULT_BROWSERS))
         self.session_procs = set(cfg.get("vdi_session_processes") or [])
         self._frame_rects = []   # toạ độ các khung VDI đang hiện (lần quét gần nhất), để nhận mặt phiên Citrix lạ
+        self._client = cfg.get("vdi_client", "ca_hai")
         self.method = f"Win32 API (cửa sổ + tên tiến trình), nhận VDI qua: {_modes(cfg)}"
         self.warnings = []
 
@@ -295,18 +299,32 @@ class WindowsProbe:
         hit = self._procs.get((hwnd, self.api.pid(hwnd)))
         return bool(hit and len(hit) > 2 and hit[2])
 
+    def client(self):
+        """Chế độ /vdi đang chọn. Vừa đổi qua bot: quên các cửa sổ VDI đã nhớ để lần quét tới xét lại theo chế độ mới."""
+        mode = self.cfg.get("vdi_client", "ca_hai")
+        if mode != self._client:
+            self._client = mode
+            self._vdi, self._next_scan, self._frame_rects = [], 0.0, []
+            get_logger().info("Đổi app VDI cần đo: %s. Quét lại cửa sổ VDI.", mode)
+        return mode
+
     def is_vdi(self, proc, title, hwnd=None):
+        mode = self.client()
         if proc:  # biết tên process thì chỉ tin tên process (Outlook/Chrome có chữ "Desktop Viewer" không tính)
             if proc in self.cfg["vdi_processes"] or proc in self.session_procs:
-                return True
+                return vdi_client_allows(self.cfg, proc)
             if proc in self.browsers:
                 return browser_title_is_vdi(title, self.browser_kw)
+            if mode == "winapp":
+                return False  # chỉ đo Windows App: app Citrix tên lạ không tính
             # Citrix đổi tên file giữa các bản (cdviewer.exe -> Citrix.DesktopViewer.App.exe...): app Citrix (tên bắt
             # đầu bằng "citrix" hoặc nằm trong thư mục Citrix) mà tiêu đề có từ khoá VDI thì vẫn là cửa sổ VDI.
             t = (title or "").lower()
             if not any(kw in t for kw in self.cfg["vdi_title_keywords"]):
                 return False
             return proc.startswith("citrix") or (hwnd is not None and self.is_citrix(hwnd, proc))
+        if mode == "winapp":
+            return False  # nhận theo tiêu đề là phương án dự phòng của riêng Citrix
         t = (title or "").lower()  # không đọc được tên process (Citrix chạy quyền Admin): dựa vào tiêu đề
         return bool(t) and any(kw in t for kw in self.cfg["vdi_title_keywords"])
 
@@ -359,7 +377,9 @@ class WindowsProbe:
             return False
         proc = self.proc_name(h)
         if proc in self.session_procs:
-            return True
+            return vdi_client_allows(self.cfg, proc)
+        if self.client() == "winapp":
+            return False
         if not proc or proc in self.cfg["vdi_processes"] or not self.is_citrix(h, proc):
             return False  # thanh công cụ / hộp thoại của Desktop Viewer không phải mặt phiên
         if self._covers_frame(r):
@@ -469,7 +489,7 @@ class WindowsProbe:
             else:
                 vdi_state = "background"
         citrix_fg = bool(fg) and bool(fg_proc) and self.is_citrix(fg, fg_proc)
-        if citrix_fg and vdi_state != "foreground" and fg_proc not in self.cfg["vdi_processes"] \
+        if citrix_fg and self.client() != "winapp" and vdi_state != "foreground" and fg_proc not in self.cfg["vdi_processes"] \
                 and fg_proc not in self.session_procs and api.is_toolwindow(fg) \
                 and self._big_on_screen(fg, *UNKNOWN_CITRIX_WARN_SIZE):
             self.warn(f'Thấy cửa sổ Citrix lạ "{fg_proc}" ở trước nhưng chưa tính là VDI. Nếu lúc đó bạn đang gõ trong '
@@ -898,7 +918,7 @@ class MacProbe:
 
     def is_vdi(self, w, seen):
         owner = (w.get("owner") or "").lower()
-        if any(n in owner for n in self.apps):
+        if any(n in owner and vdi_client_allows(self.cfg, n) for n in self.apps):
             return True
         if self.browser_kw and owner in self.browsers:
             seen.append(w.get("title") or "")

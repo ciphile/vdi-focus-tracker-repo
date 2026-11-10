@@ -36,6 +36,9 @@ DEFAULTS = {
     # nằm đè lên vùng làm việc của Desktop Viewer). Gõ phím trong VDI thì cửa sổ này (hoặc Desktop Viewer) ở trước;
     # lúc VDI ở chế độ Full screen của Citrix, cửa sổ Desktop Viewer chính biến mất và chỉ còn nó.
     "vdi_session_processes": ["citrix.engineui.app.exe"],
+    # Đo VDI mở bằng app nào: "ca_hai" (mặc định: Citrix lẫn Windows App / Remote Desktop đều tính), "citrix" (chỉ
+    # Citrix), "winapp" (chỉ Windows App / Remote Desktop: Azure Virtual Desktop, msrdc.exe). Đổi nhanh: /vdi trên bot.
+    "vdi_client": "ca_hai",
     "vdi_title_keywords": ["Desktop Viewer"],
     # Citrix mở bằng trình duyệt (Citrix Workspace web, bản HTML5): tab VDI nằm trong Chrome/Edge/Safari,
     # nên chỉ nhận ra được qua tiêu đề tab (tab VDI mang tên máy ảo, ví dụ «AZ-WIN11-SGLIFE-REGULAR»).
@@ -182,6 +185,41 @@ NUDGE_ALIASES = {"off": "off", "tat": "off", "tắt": "off", "false": "off", "0"
                  "high": "nghiem"}
 
 
+# Đo VDI theo app nào (/vdi): tên process -> họ app. Process người dùng tự thêm, không thuộc họ nào: mode nào cũng tính.
+VDI_CLIENTS = ("ca_hai", "citrix", "winapp")
+VDI_CLIENT_NAMES = {"ca_hai": "cả hai (Citrix và Windows App)", "citrix": "chỉ Citrix",
+                    "winapp": "chỉ Windows App (Azure Virtual Desktop)"}
+VDI_CLIENT_ALIASES = {"ca_hai": "ca_hai", "cahai": "ca_hai", "both": "ca_hai", "auto": "ca_hai", "all": "ca_hai",
+                      "citrix": "citrix", "winapp": "winapp", "windowsapp": "winapp", "windows_app": "winapp",
+                      "avd": "winapp", "azure": "winapp", "msrdc": "winapp", "rdp": "winapp"}
+WINAPP_PROCS = frozenset(("msrdc.exe", "mstsc.exe", "windows app", "microsoft remote desktop"))
+CITRIX_PROCS = frozenset(("cdviewer.exe", "wfica32.exe"))
+
+
+def vdi_client(value):
+    """Chuẩn hoá tên chế độ ("AVD" -> "winapp"...). Không nhận ra thì None."""
+    if value is None:
+        return None
+    return VDI_CLIENT_ALIASES.get(str(value).strip().lower().replace(" ", "_").replace("-", "_"))
+
+
+def vdi_family(proc):
+    """"citrix" | "winapp" | None (process người dùng tự thêm, không rõ họ)."""
+    proc = (proc or "").lower()
+    if proc in WINAPP_PROCS:
+        return "winapp"
+    if proc.startswith("citrix") or proc in CITRIX_PROCS:
+        return "citrix"
+    return None
+
+
+def vdi_client_allows(cfg, proc):
+    """Process VDI này có được tính ở chế độ /vdi đang chọn không."""
+    mode = cfg.get("vdi_client", "ca_hai")
+    family = vdi_family(proc)
+    return mode == "ca_hai" or family is None or family == mode
+
+
 def nudge_level(value):
     """Chuẩn hoá mức nhắc ("light" -> "nhe"...). Không nhận ra thì None."""
     return NUDGE_ALIASES.get(str(value).strip().lower().replace("_", " ").split(" ")[0]) if value is not None else None
@@ -265,6 +303,10 @@ def validate(cfg):
         raise ConfigError(f'"nudge_level" là một trong {list(NUDGE_LEVELS)} (hoặc light/normal/strict), '
                           f'đang là {cfg["nudge_level"]!r}.')
     cfg["nudge_level"] = level
+    client = vdi_client(cfg["vdi_client"]) if isinstance(cfg["vdi_client"], str) else None
+    if client is None:
+        raise ConfigError(f'"vdi_client" là một trong {list(VDI_CLIENTS)}, đang là {cfg["vdi_client"]!r}.')
+    cfg["vdi_client"] = client
     if not 1 <= cfg["sample_seconds"] <= 60:
         raise ConfigError('"sample_seconds" nên từ 1 đến 60.')
     if not isinstance(cfg["daily_focus_goal_hours"], (int, float)) or cfg["daily_focus_goal_hours"] <= 0:

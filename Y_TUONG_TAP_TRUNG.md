@@ -40,6 +40,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Khởi động lại tracker | Nhấp đúp `khoi_dong_lai.bat` (Mac `.command`) | Thay cho *End task* rồi bật lại: tracker ghi nốt số liệu vào DB rồi tự tắt, bật lại chạy ẩn, đọc lại `settings.json` / `persona.json`; không mất số đếm trong ngày |
 | Chuỗi ngày đạt mục tiêu (streak) | `/today` | Ngày nghỉ không làm đứt chuỗi |
 | Giờ vàng | `/golden` | Khung giờ tập trung tốt nhất 14 ngày qua |
+| Chọn app mở VDI cần đo | `/vdi citrix`, `/vdi winapp`, `/vdi ca_hai` | VDI mở bằng Citrix hay bằng Windows App (Azure Virtual Desktop, `msrdc.exe`): chọn đo một loại hoặc cả hai, có hiệu lực ngay; cửa sổ của loại còn lại tính là ngoài VDI |
 | Hiệu năng | `/perf`, `xem_cpu_ram.bat` | Đo thật trên laptop: CPU khoảng 0,07% một nhân, RAM khoảng 32 MB |
 
 **Nhắc nhở qua Telegram**

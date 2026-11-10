@@ -14,7 +14,7 @@ import unicodedata
 from . import ai_client
 from . import ai_context
 from .actions import (ACTIONS, BY_NAME, ENC_WORDS, LEAVE_WORDS, ONOFF, TONE_WORDS, _take_word, _word_lookup, catalog,
-                      health_lookup, nudge_lookup, parse_bot_hours, parse_command_args, parse_day, validate)
+                      health_lookup, nudge_lookup, parse_bot_hours, parse_command_args, parse_day, validate, vdi_lookup)
 from .logs import get_logger
 
 log = get_logger()
@@ -68,7 +68,7 @@ CANCEL_RE = re.compile(r"(?<![a-z])(huy|khong nghi nua|thoi khong nghi|khong ngh
 FILLER = ("", "nhe", "nha", "a", "nhe ban", "ban nhe", "nghe", "di", "luon")
 
 VIEW_QUESTIONS = {"canh_bao_tien_do", "doi_muc_nhac", "nhac_nghi_ngoi", "nhac_uong_nuoc", "gio_bot",
-                  "tu_tinh_nang_luong"}
+                  "tu_tinh_nang_luong", "chon_app_vdi"}
 FILLER = r"(?:(?:minh|em|toi|anh|chi|se|da|cu)\s+)?"  # "mai MÌNH làm", "nhắc MÌNH nghỉ ngơi"
 _KW_CACHE = {}
 
@@ -115,7 +115,8 @@ def by_rules(text, today=None):
         best = best_write
     # Câu hỏi ("tại sao...", "...bao nhiêu?") không phải lệnh ghi: gửi AI trả lời. Riêng hỏi xem tiến độ / mức nhắc
     # ("tiến độ hôm nay thế nào?") là xem trạng thái.
-    viewing = best and best[2].name in VIEW_QUESTIONS and not _word_lookup(ONOFF, text) and not nudge_lookup(text)
+    viewing = best and best[2].name in VIEW_QUESTIONS and not _word_lookup(ONOFF, text) and not nudge_lookup(text) \
+        and not (best[2].name == "chon_app_vdi" and vdi_lookup(text))
     if best and best[2].name == "gio_bot":  # "bot tắt lúc mấy giờ?" là xem; có giờ cụ thể là đổi
         viewing = not parse_bot_hours(text)
     if (not best or best[2].name == "tro_chuyen" or best[2].writes) and not viewing and _looks_like_question(folded):
@@ -151,11 +152,11 @@ def by_rules(text, today=None):
         if value is None and folded.strip().startswith("nhac "):
             value = "on"
         return action, ({"every": value} if value is not None else {})
-    if action.params and action.params[0][1] in ("onoff", "tone", "encmode", "nudgelevel"):
+    if action.params and action.params[0][1] in ("onoff", "tone", "encmode", "nudgelevel", "vdiclient"):
         # "tắt AI đánh giá", "đổi giọng sang hài hước", "nhắc nghiêm khắc hơn": từ bật/tắt/giọng/mức nằm đâu trong
         # câu cũng được; không có thì là hỏi xem trạng thái.
         name, kind = action.params[0][:2]
-        value = (nudge_lookup(text) if kind == "nudgelevel"
+        value = (nudge_lookup(text) if kind == "nudgelevel" else vdi_lookup(text) if kind == "vdiclient"
                  else _word_lookup({"onoff": ONOFF, "tone": TONE_WORDS, "encmode": ENC_WORDS}[kind], text))
         return action, ({name: value} if value else {})
     if action.name in ("bao_nghi", "nghi_phep"):
