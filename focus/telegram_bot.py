@@ -49,7 +49,7 @@ SKIP_WORDS = {"/skip", "bỏ qua", "bo qua", "skip", "-"}
 CONVO_TTL_SECONDS = 3 * 3600       # /plan, /review bạn tự gõ
 AUTO_CONVO_TTL_SECONDS = 20 * 60   # bot tự hỏi theo lịch: lâu không trả lời thì thôi, không "bắt" tin nhắn sau đó
 STALE_MESSAGE_SECONDS = 3600        # tin nhắn gửi lúc app tắt, tới khi mở máy mới đọc
-STALE_SKIP = {"tam_dung", "tiep_tuc"}  # tin cũ kiểu này bỏ qua (tạm dừng cả ngày vì tin tối qua là sai)
+STALE_SKIP = {"tam_dung", "tiep_tuc", "tat_app", "che_do_lam_bu"}  # tin cũ kiểu này bỏ qua (tạm dừng cả ngày vì tin tối qua là sai)
 ENERGY_RE = re.compile(r"(?<!\d)([1-5])(?!\d)")
 PENDING_TTL_SECONDS = 30 * 60
 MAX_PHOTO_BYTES = 10 * 1024 * 1024
@@ -814,12 +814,19 @@ class TelegramBot:
 
     # ------------------------------------------------------------ chạy action
 
+    def _skip_stale(self, action):
+        """Tin cũ (gửi lúc app chưa chạy) của thao tác trong STALE_SKIP: bỏ qua, báo người dùng. Trả True nếu bỏ."""
+        stale = getattr(self._local, "stale", None)
+        if not (stale and action.name in STALE_SKIP):
+            return False
+        log.info("Bỏ qua %s cũ (gửi lúc %s)", action.name, stale)
+        self.send(f"Bỏ qua lệnh «{action.title}» bạn gửi lúc {stale} (khi đó app chưa chạy). "
+                  f"Cần thì gửi lại {action.command} nhé.")
+        return True
+
     def run_action(self, action, args):
         stale = getattr(self._local, "stale", None)
-        if stale and action.name in STALE_SKIP:
-            log.info("Bỏ qua %s cũ (gửi lúc %s)", action.name, stale)
-            self.send(f"Bỏ qua lệnh «{action.title}» bạn gửi lúc {stale} (khi đó app chưa chạy). "
-                      f"Cần thì gửi lại {action.command} nhé.")
+        if self._skip_stale(action):
             return
         log.info("Action %s %s", action.name, json.dumps(args, ensure_ascii=False)[:300])
         action.run(self, args)
@@ -836,6 +843,10 @@ class TelegramBot:
         if error:
             log.info("Lệnh %s sai tham số: %s", cmd, error)
             self.send(f"{error}\nVí dụ: {example(action)}")
+            return
+        if action.confirm_command and action.needs_confirm(args):  # /tatapp: gõ lệnh cũng phải bấm OK
+            if not self._skip_stale(action):
+                self.ask_confirm(action, args, f"{cmd} {arg}".strip())
             return
         self.run_action(action, args)
 
@@ -862,6 +873,8 @@ class TelegramBot:
                       f"Bạn gõ lại kèm đủ thông tin, hoặc dùng lệnh {action.command}.")
             return
         if action.needs_confirm(args) or (action.name == "hoi_ai" and ask_toggle(args.get("text"))):
+            if self._skip_stale(action):  # "tắt app đi" nhắn lúc app chưa chạy: không hỏi OK lúc app vừa bật
+                return
             self.ask_confirm(action, args, text, source, intent.cross_check(text, action, args, source, self.today()))
         else:
             if action.name not in ("hoi_ai", "tro_chuyen"):  # chỉ xem: chạy luôn, nhưng vẫn cho thấy bot hiểu thành gì
@@ -1037,3 +1050,5 @@ class TelegramBot:
 
     def stop(self):
         self.stopped.set()
+        if self.offset:  # báo Telegram đã nhận tin cuối (vd. nút OK của /tatapp), lần bật sau không nhận lại
+            self._quiet("getUpdates", {"offset": self.offset, "timeout": 0, "limit": 1})

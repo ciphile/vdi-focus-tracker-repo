@@ -94,6 +94,9 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Lễ Singapore theo lịch MOM, nghỉ bù thứ Hai khi lễ rơi Chủ nhật | Tự động | Tự tải lịch năm sau từ 1/12 |
 | Không chạy thứ 7, Chủ nhật, ngày lễ | Tự động | — |
 | Tự bật 08:00 thứ 2 – thứ 6, tự tắt 23:59 | `/giobot` | Đổi giờ qua bot, bot tự sửa Task Scheduler |
+| Chạy 24/24 (cả cuối tuần, ngày lễ) | `/chay247 on`, `/chay247 off` | Bot bật 00:00 – tắt 24:00 + chạy cả ngày nghỉ (ngày nghỉ chỉ ghi giờ làm trong VDI, không nhắc); off trả lại giờ cũ. Máy phải để không ngủ |
+| Chế độ làm bù (OT) / thường khi app đang chạy | `/lambu on`, `/lambu off` | Như bật bằng `lam_bu_ngoai_gio.bat`: ngày nghỉ vẫn ghi giờ làm trong VDI; off ngày nghỉ thì app chốt số liệu rồi tắt |
+| Tắt hẳn app từ Telegram | `/tatapp` | Luôn hỏi OK; chốt số liệu rồi thoát. Bật lại trên máy hoặc chờ máy tự bật |
 | Xem tình trạng đầy đủ | `/status` | Lúc này, hôm nay, cài đặt, AI, hệ thống |
 | Dùng chung cho đồng nghiệp | `config/persona.json` | Không ghi cứng tên ai; mỗi người bot riêng, key riêng |
 | Lấy chat ID lúc cài | `start_tracker.bat` | Chạy được mọi giờ, mọi ngày |

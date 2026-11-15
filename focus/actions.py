@@ -20,6 +20,7 @@ AI và rule dự phòng tự nhận ra, không phải sửa chỗ nào khác.
 """
 import datetime as dt
 import re
+import sys
 import unicodedata
 from dataclasses import dataclass, field
 
@@ -50,6 +51,8 @@ class Action:
     # True: không kèm tham số thì chỉ XEM trạng thái (không ghi gì) nên không cần bấm OK.
     view_without_args: bool = False
     check: object = None
+    # True: gõ lệnh (/tatapp) cũng phải bấm OK, không chạy ngay (việc không làm lại được từ Telegram).
+    confirm_command: bool = False
 
     def needs_confirm(self, args):
         return self.writes and not (self.view_without_args and not args)
@@ -1071,7 +1074,10 @@ def _hours_warnings(cfg, start, stop):
 
 def hours_line(cfg):
     """Một dòng cho /status."""
-    return f"Bot bật {cfg['auto_start_at']} – tắt {cfg['auto_stop_at']} ({WORK_DAYS}) · /giobot"
+    if run247_on(cfg):
+        return "Bot chạy 24/24 (00:00 – 24:00, cả ngày nghỉ) · /chay247"
+    return (f"Bot bật {cfg['auto_start_at']} – tắt {cfg['auto_stop_at']} ({WORK_DAYS}"
+            + (", chạy cả ngày nghỉ" if cfg.get("run_on_off_days") else "") + ") · /giobot")
 
 
 def hours_view(cfg, db):
@@ -1175,6 +1181,183 @@ def _giobot(bot, args):
         lines.append(f"Giờ bật không đổi ({start}): không cần sửa lịch tự bật của máy.")
     bot.send("\n".join(lines))
     cfg.update({"auto_start_at": start, "auto_stop_at": stop})  # một lần: tracker không thấy khung nửa cũ nửa mới
+
+
+# ------------------------------------------------------------ tắt app, chế độ làm bù, chạy 24/24
+
+RUN247 = ("00:00", "24:00")
+
+
+def _start_hint(cfg):
+    launcher = "start_tracker.command" if sys.platform == "darwin" else "start_tracker.vbs"
+    return (f"Bật lại: nhấp đúp {launcher} trong thư mục app (ngày nghỉ: lam_bu_ngoai_gio), hoặc để máy tự bật lúc "
+            f"{cfg['auto_start_at']} ngày làm việc tới / lần đăng nhập hay mở máy tới (trong khung giờ chạy).")
+
+
+def _tatapp(bot, args):
+    """Tắt hẳn app (tracker + bot) như khoi_dong_lai nhưng không bật lại. Báo trước, đặt cờ sau: tracker thấy cờ ở
+    vòng kế tiếp (~5 giây) thì chốt số liệu rồi thoát."""
+    ev = (getattr(bot, "state", None) or {}).get("quit")
+    if ev is None:
+        bot.send("Chưa tắt được: app chưa chạy xong bước khởi động. Thử lại sau ít giây nhé.")
+        return
+    audit("QUIT", "telegram")
+    log.info("/tatapp: người dùng tắt app qua Telegram.")
+    bot.send("👋 Đang tắt app: mình chốt số liệu hôm nay rồi thoát trong vài giây. Từ lúc này không đo, không nhắc, "
+             "bot không trả lời tin nhắn nữa (vì bot nằm trong app).\n" + _start_hint(bot.cfg))
+    ev.set()
+
+
+def lambu_on(bot):
+    return bool((getattr(bot, "state", None) or {}).get("manual"))
+
+
+def _lambu(bot, args):
+    """Chế độ làm bù (OT) của lần chạy này: như bật bằng lam_bu_ngoai_gio. Chỉ đổi cờ trong RAM (hết khi app tắt)."""
+    state = args.get("state")
+    cfg, st = bot.cfg, getattr(bot, "state", None)
+    if st is None:
+        bot.send("Chưa đổi được: app chưa chạy xong bước khởi động. Thử lại sau ít giây nhé.")
+        return
+    day = bot.today()
+    off = off_day(bot.db, cfg, day)
+    stop = cfg["auto_stop_at"]
+    if state == "on":
+        st["manual"] = True
+        audit("LAMBU", "on")
+        _poke(bot)
+        bot.send("🌙 Đã bật chế độ làm bù (OT), giống bật app bằng lam_bu_ngoai_gio: ngày nghỉ (cuối tuần, lễ, /off) "
+                 "app vẫn chạy và chỉ ghi giờ làm trong VDI (có gõ phím / rê chuột), không nhắc, không tính sao nhãng. "
+                 "Ngày làm việc thì trong giờ làm vẫn đo, nhắc như thường; ngoài giờ làm tính là OT."
+                 + (f"\nHôm nay nghỉ ({off}): đang ghi giờ làm bù." if off else "")
+                 + f"\nGiữ tới khi app tắt (tự tắt lúc {stop}). Về chế độ thường: /lambu off")
+        return
+    if state in ("off", "default"):
+        st["manual"] = False
+        audit("LAMBU", "off")
+        if off and not cfg["run_on_off_days"]:
+            text = (f"Đã về chế độ thường. Hôm nay nghỉ ({off}) nên mình chốt số liệu làm bù rồi tắt app ngay. "
+                    + _start_hint(cfg))
+        elif off:
+            text = (f"Đã về chế độ thường. Hôm nay nghỉ ({off}) nhưng app đang chạy cả ngày nghỉ (/chay247) nên vẫn "
+                    "chạy và vẫn ghi giờ làm trong VDI, không nhắc.")
+        else:
+            text = ("Đã về chế độ thường: ngày làm việc đo và nhắc như bình thường; ngày nghỉ app không chạy "
+                    "(trừ khi bật /chay247 on).")
+        bot.send(text)
+        _poke(bot)  # gửi câu trả lời trước: ngày nghỉ thì tracker thoát ngay ở vòng kế tiếp
+        return
+    on = lambu_on(bot)
+    lines = [f"Chế độ đang dùng: {'LÀM BÙ (OT)' if on else 'THƯỜNG'}.",
+             "• Làm bù (OT): giống bật app bằng lam_bu_ngoai_gio. Ngày nghỉ (cuối tuần, lễ, /off) app vẫn chạy, chỉ "
+             "ghi giờ làm trong VDI, không nhắc, không tính sao nhãng.",
+             "• Thường: ngày nghỉ app không chạy (trừ khi /chay247 on). Ngày làm việc hai chế độ đo như nhau: trong "
+             "giờ làm đo và nhắc, ngoài giờ làm tính là OT.",
+             "/lambu on · /lambu off (đổi có hiệu lực ngay, giữ tới khi app tắt)"]
+    if off:
+        lines.insert(1, f"Hôm nay nghỉ ({off}).")
+    bot.send("\n".join(lines))
+
+
+def run247_on(cfg):
+    return bool(cfg.get("run_on_off_days")) and (cfg["auto_start_at"], cfg["auto_stop_at"]) == RUN247
+
+
+def _run247_restore_target(cfg, db):
+    """(giờ bật, giờ tắt, chạy ngày nghỉ) khi /chay247 off: cài đặt trước lần bật, không có thì settings.json gốc,
+    settings.json gốc cũng là 24/24 thì giờ mặc định của app."""
+    prev = prefs.run247_prev(db)
+    if prev:
+        return prev["auto_start_at"], prev["auto_stop_at"], prev["run_on_off_days"]
+    start = cfg.get("_file_auto_start_at") or DEFAULTS["auto_start_at"]
+    stop = cfg.get("_file_auto_stop_at") or DEFAULTS["auto_stop_at"]
+    if (start, stop) == RUN247:
+        start, stop = DEFAULTS["auto_start_at"], DEFAULTS["auto_stop_at"]
+    return start, stop, False
+
+
+def run247_view(cfg):
+    if run247_on(cfg):
+        head = "🔁 App đang chạy 24/24: bật 00:00 – tắt 24:00, cả cuối tuần và ngày lễ."
+    elif cfg.get("run_on_off_days"):
+        head = (f"App chạy cả ngày nghỉ, giờ chạy {cfg['auto_start_at']} – {cfg['auto_stop_at']} (chưa phải 24/24).")
+    else:
+        head = (f"App KHÔNG chạy 24/24: bật {cfg['auto_start_at']} – tắt {cfg['auto_stop_at']}, {WORK_DAYS}; cuối "
+                "tuần, ngày lễ không chạy.")
+    return "\n".join([head,
+                      "• 24/24: bật 00:00 – tắt 24:00, chạy cả ngày nghỉ. Ngày nghỉ và ngoài giờ làm chỉ ghi giờ làm "
+                      "trong VDI, không nhắc; trong giờ làm ngày làm việc vẫn đo, nhắc như thường.",
+                      "• Máy phải luôn bật: Windows Settings > System > Power & sleep (Power & battery) > Sleep = Never, "
+                      "và gập nắp = Do nothing. Máy ngủ hay tắt thì app cũng dừng.",
+                      "/chay247 on · /chay247 off (trả lại giờ cũ)"])
+
+
+def _chay247(bot, args):
+    """Bật/tắt chạy 24/24 = giờ bot 00:00–24:00 + chạy cả ngày nghỉ. Cùng thứ tự với /giobot: lưu prefs ->
+    settings.json -> lịch tự bật của máy -> trả lời -> đổi cfg SAU CÙNG (tracker đọc cfg mỗi vòng, có thể thoát ngay)."""
+    state = args.get("state")
+    cfg, db = bot.cfg, bot.db
+    if not state:
+        bot.send(run247_view(cfg))
+        return
+    path = cfg.get("_settings_path")
+    if state == "on":
+        if run247_on(cfg):
+            bot.send("App đang chạy 24/24 rồi, không cần đổi gì.\n" + run247_view(cfg))
+            return
+        start, stop, run_off = RUN247[0], RUN247[1], True
+        file_vals = autostart.read_settings(path) if path else None
+        orig = {k: (file_vals.get(k) if file_vals is not None else cfg.get("_file_" + k)) for k in prefs.HOURS}
+        prefs.set_run_on_off_days(db, True, prev={"auto_start_at": cfg["auto_start_at"],
+                                                  "auto_stop_at": cfg["auto_stop_at"],
+                                                  "run_on_off_days": bool(cfg.get("run_on_off_days"))})
+        prefs.set_bot_hours(cfg, db, start, stop, orig)
+        lines = ["🔁 Đã bật chạy 24/24: bật 00:00 – tắt 24:00, chạy cả cuối tuần và ngày lễ.",
+                 "Ngày nghỉ và ngoài giờ làm: chỉ ghi giờ làm trong VDI, không nhắc. Giờ làm ngày làm việc: đo, nhắc "
+                 "như thường.",
+                 "⚠️ Nhớ cho máy không ngủ: Settings > System > Power & sleep > Sleep = Never, gập nắp = Do nothing."]
+    else:
+        start, stop, run_off = _run247_restore_target(cfg, db)
+        if not cfg.get("run_on_off_days") and (cfg["auto_start_at"], cfg["auto_stop_at"]) != RUN247:
+            bot.send("App đang không chạy 24/24, không cần tắt.\n" + run247_view(cfg))
+            return
+        problem = hours_problem(cfg, start, stop)
+        if problem:
+            bot.send(f"Chưa tắt được 24/24: giờ cũ ({start}–{stop}) không dùng được, {problem} "
+                     "Đặt giờ khác bằng /giobot rồi gõ lại /chay247 off.")
+            return
+        prefs.set_run_on_off_days(db, run_off, prev=False)
+        prefs.set_bot_hours(cfg, db, start, stop)
+        lines = [f"↩️ Đã tắt chạy 24/24: bot bật {start} – tắt {stop}, {WORK_DAYS}"
+                 + ("; vẫn chạy cả ngày nghỉ (như trước khi bật 24/24)." if run_off else
+                    "; cuối tuần, ngày lễ không chạy.")]
+        now = _now_hhmm()
+        off = off_day(db, cfg, bot.today())
+        if now >= stop:
+            lines.append(f"Đã quá {stop}: app chốt số liệu hôm nay rồi tắt ngay. Ngày làm việc tới tự bật lúc {start}.")
+        elif off and not run_off and not lambu_on(bot):
+            lines.append(f"Hôm nay nghỉ ({off}): app chốt số liệu rồi tắt ngay. Ngày làm việc tới tự bật lúc {start}.")
+        elif now < start:
+            lines.append(f"Hôm nay app đang chạy nên chạy tiếp tới {stop}; giờ bật {start} áp dụng từ ngày làm việc tới.")
+        else:
+            lines.append(f"Hôm nay app tắt lúc {stop}.")
+    audit("RUN_247", f"{state} {start}-{stop} off_days={run_off}")
+    log.info("/chay247 %s: %s–%s, chạy ngày nghỉ = %s", state, start, stop, run_off)
+    updates = {"auto_start_at": start, "auto_stop_at": stop, "run_on_off_days": True if run_off else None}
+    if path:
+        ok, why = autostart.write_settings(path, updates)
+        lines.append("Đã lưu vào config/settings.json (bản cũ: settings.json.bak)." if ok else
+                     f"⚠️ Không ghi được config/settings.json ({why}). Cài đặt mới vẫn có hiệu lực (lưu trong DB).")
+        if ok and state != "on":  # đã trả lại vào file: file là nguồn, sau này sửa tay settings.json vẫn có tác dụng
+            prefs.set_pref(db, "run_on_off_days", None)
+    else:
+        log.info("/chay247: cấu hình không có đường dẫn settings.json, không ghi file.")
+    if start != cfg["auto_start_at"]:
+        lines.append(autostart.update_start_time(cfg, start)[1])
+    lines.append("Xem lại: /chay247 · /giobot")
+    bot.send("\n".join(lines))
+    cfg.update({"auto_start_at": start, "auto_stop_at": stop, "run_on_off_days": run_off})  # một lần, sau câu trả lời
+    _poke(bot)
 
 
 def _help(bot, args):
@@ -1374,6 +1557,28 @@ ACTIONS = [
                      "cho bot chay", "bot chay tu", "bot bat luc", "bot tat luc", "bot tu bat", "bot tu tat",
                      "khung gio chay", "gio chay bot"],
            view_without_args=True),
+    Action("chay_24_24", ["/chay247"], "Chạy 24/24",
+           "Bật/tắt chạy 24/24: bot bật 00:00 – tắt 24:00 và chạy cả cuối tuần, ngày lễ (ngày nghỉ và ngoài giờ làm "
+           "chỉ ghi giờ làm trong VDI, không nhắc); off = trả lại giờ cũ; không kèm gì thì xem đang chạy thế nào",
+           _chay247, params=[("state", "onoff", "on (bật 24/24) / off (tắt, về giờ cũ)", False)], writes=True,
+           confirm="Chuyển chạy 24/24 sang: {state}",
+           keywords=["chay 24/24", "chay 24 24", "chay 247", "chay 24 7", "chay 24h", "24/24", "24 24", "chay247",
+                     "chay ca ngay nghi", "chay suot ngay dem", "chay ca cuoi tuan"],
+           view_without_args=True),
+    Action("che_do_lam_bu", ["/lambu"], "Chế độ làm bù (OT) / thường",
+           "Bật/tắt chế độ làm bù (OT) như khi bật app bằng lam_bu_ngoai_gio: on = ngày nghỉ vẫn ghi giờ làm trong "
+           "VDI, không nhắc; off = về chế độ thường (ngày nghỉ thì app tắt luôn); không kèm gì thì xem chế độ đang "
+           "dùng", _lambu, params=[("state", "onoff", "on (làm bù / OT) / off (chế độ thường)", False)], writes=True,
+           confirm="Chuyển chế độ làm bù (OT) sang: {state}",
+           keywords=["che do lam bu", "che do ot", "mode ot", "lambu", "che do thuong", "mode thuong",
+                     "bat lam bu", "tat lam bu"],
+           view_without_args=True),
+    Action("tat_app", ["/tatapp"], "Tắt hẳn app",
+           "Tắt hẳn app (tracker + bot) từ Telegram: chốt số liệu rồi thoát; luôn hỏi OK trước. Bật lại phải làm "
+           "trên máy (hoặc máy tự bật giờ tự bật tới)", _tatapp, writes=True, confirm_command=True,
+           confirm="Tắt hẳn app (chốt số liệu rồi thoát, bot ngừng trả lời tới lần bật sau)",
+           keywords=["tat app", "tat han app", "thoat app", "tat tracker", "thoat tracker", "dung app", "tatapp",
+                     "tat ung dung", "thoat ung dung", "tat focus tracker"]),
     Action("huy", ["/cancel"], "Huỷ", "Huỷ thao tác đang chờ xác nhận hoặc đang hỏi dở", _cancel,
            keywords=["huy bo", "thoi khong", "cancel"]),
     Action("tro_giup", ["/help", "/start"], "Danh sách lệnh", "Xem danh sách lệnh", _help,
@@ -1409,7 +1614,7 @@ HELP_GROUPS = [
     ("🤖 AI, ĐỘNG VIÊN, CÀI ĐẶT", ["hoi_ai", "xin_cau_dong_luc", "xin_cau_kinh_thanh", "bat_tat_ai_danh_gia",
                                   "cai_khich_le", "doi_giong", "doi_muc_nhac", "canh_bao_tien_do",
                                   "tu_tinh_nang_luong", "nhac_nghi_ngoi", "nhac_uong_nuoc"]),
-    ("🛠 HỆ THỐNG", ["gio_bot", "xem_ai", "xoa_cache_ai", "xem_hieu_nang", "huy", "tro_giup"]),
+    ("🛠 HỆ THỐNG", ["gio_bot", "chay_24_24", "che_do_lam_bu", "tat_app", "xem_ai", "xoa_cache_ai", "xem_hieu_nang", "huy", "tro_giup"]),
 ]
 
 EXAMPLES = {
@@ -1483,6 +1688,14 @@ EXAMPLES = {
                 "từ hôm sau (Task Scheduler / launchd); giờ tắt có hiệu lực ngay",
                 ["/giobot", "/giobot 08:30 18:00", "/giobot bat 08:30", "/giobot tat 19:00", "/giobot mac_dinh",
                  "bật bot lúc 8 rưỡi", "tắt bot lúc 6 giờ chiều", "cho bot chạy từ 8h đến 18h"]),
+    "chay_24_24": ("Chạy 24/24: bot bật 00:00 – tắt 24:00, chạy cả cuối tuần, ngày lễ (ngày nghỉ, ngoài giờ làm chỉ "
+                   "ghi giờ làm trong VDI, không nhắc). Máy phải để không ngủ. off: về giờ cũ",
+                   ["/chay247", "/chay247 on", "/chay247 off", "cho app chạy 24/24"]),
+    "che_do_lam_bu": ("Chế độ làm bù (OT) như lam_bu_ngoai_gio: on = ngày nghỉ vẫn ghi giờ làm trong VDI, không nhắc; "
+                      "off = chế độ thường (ngày nghỉ thì app tắt luôn). Giữ tới khi app tắt",
+                      ["/lambu", "/lambu on", "/lambu off", "bật chế độ OT"]),
+    "tat_app": ("Tắt hẳn app từ Telegram (luôn hỏi OK). Bật lại: start_tracker trên máy, hoặc máy tự bật giờ tự bật tới",
+                ["/tatapp", "tắt app đi"]),
     "xem_ai": ("AI đang dùng model nào, đã gọi bao nhiêu lần, bao nhiêu từ", ["/aistatus"]),
     "xoa_cache_ai": ("Xoá cache model và nhận xét AI đã lưu (khi AI trả lời lạ)", ["/clearcache"]),
     "xem_hieu_nang": ("Tracker đang tốn bao nhiêu CPU/RAM", ["/perf"]),
@@ -1493,7 +1706,7 @@ EXAMPLES = {
 AUTO_FEATURES = """🎯 FOCUS TRACKER: bot theo dõi thời gian tập trung thật sự của bạn trong VDI.
 
 BOT TỰ LÀM (bạn không cần gõ gì):
-• Thứ 2 – thứ 6: tự bật lúc {start}, tự tắt lúc {stop} (/giobot để đổi). Cuối tuần, ngày lễ: không chạy.
+• Thứ 2 – thứ 6: tự bật lúc {start}, tự tắt lúc {stop} (/giobot để đổi). Cuối tuần, ngày lễ: không chạy (/chay247 on: chạy 24/24).
 • Lần đầu dùng máy sau {plan}: chào buổi sáng + câu khích lệ / Kinh Thánh, nhắc việc hôm qua hẹn làm trước, rồi hỏi kế hoạch.
 • Trong giờ làm {ws}–{we} (trừ trưa {ls}–{le}):
   – Sao nhãng (dùng app ngoài VDI, kể cả VDI bị thu nhỏ hoặc nằm sau app khác), mức {level} (/nudge): {nudge}.

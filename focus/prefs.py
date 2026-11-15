@@ -14,6 +14,8 @@
 - auto_start_at, auto_stop_at: /giobot 08:30 18:00   giờ bot tự bật / tự tắt (thứ 2 – thứ 6). Cũng ghi vào
   settings.json + lịch tự bật của máy (xem actions._giobot). hours_orig: giờ trong settings.json TRƯỚC lần đổi đầu
   tiên qua Telegram (để /giobot mac_dinh trả lại đúng như cũ).
+- run_on_off_days:   /chay247 on|off    chạy cả ngày nghỉ (cùng giờ bật 00:00 – tắt 24:00 = chạy 24/24). Cũng ghi vào
+  settings.json. run247_prev: giờ bật/tắt + run_on_off_days TRƯỚC khi bật 24/24 (để /chay247 off trả lại đúng như cũ).
 
 Muốn quay về giá trị trong file cấu hình: /style mac_dinh, /aireview mac_dinh, /nudge mac_dinh, /pace mac_dinh,
 /break mac_dinh, /water mac_dinh, /giobot mac_dinh, /autoenergy mac_dinh, /vdi mac_dinh.
@@ -80,6 +82,10 @@ def apply(cfg, db):
     tone = get_pref(db, "giong")
     if tone in persona.TONES:
         cfg["persona"] = dict(cfg.get("persona") or persona.DEFAULT, giong=tone)
+    cfg.setdefault("_file_run_on_off_days", bool(cfg.get("run_on_off_days")))
+    v = get_pref(db, "run_on_off_days")
+    if v in ("0", "1"):
+        cfg["run_on_off_days"] = v == "1"
     _apply_hours(cfg, db)
     return cfg
 
@@ -223,3 +229,26 @@ def set_vdi_client(cfg, db, mode):
         return
     set_pref(db, "vdi_client", mode)
     cfg["vdi_client"] = mode
+
+
+def run247_prev(db):
+    """Giờ bật/tắt + run_on_off_days trước lần /chay247 on: {"auto_start_at", "auto_stop_at", "run_on_off_days"}
+    hoặc None (chưa bật 24/24 qua Telegram / dữ liệu hỏng)."""
+    try:
+        data = json.loads(get_pref(db, "run247_prev") or "null")
+    except ValueError:
+        return None
+    if not isinstance(data, dict) or not all(norm_hhmm(data.get(k) or "") for k in HOURS):
+        return None
+    return {"auto_start_at": norm_hhmm(data["auto_start_at"]), "auto_stop_at": norm_hhmm(data["auto_stop_at"]),
+            "run_on_off_days": bool(data.get("run_on_off_days"))}
+
+
+def set_run_on_off_days(db, on, prev=None):
+    """Lưu chạy cả ngày nghỉ. prev (dict) = cài đặt trước khi bật 24/24, chỉ ghi khi chưa có (bật 2 lần vẫn giữ bản
+    gốc); prev=False = xoá bản gốc (đã trả lại). Không đổi cfg (nơi gọi đổi cfg sau cùng, như /giobot)."""
+    if prev is False:
+        set_pref(db, "run247_prev", None)
+    elif prev is not None and run247_prev(db) is None:
+        set_pref(db, "run247_prev", json.dumps(prev))
+    set_pref(db, "run_on_off_days", "1" if on else "0")

@@ -194,7 +194,6 @@ class Tracker:
         # manual: bạn tự bật (start_tracker, lam_bu_ngoai_gio), không phải lịch tự bật. Khi đó ngày nghỉ (cuối tuần,
         # lễ, /off) vẫn chạy để ghi giờ làm bù trong VDI (không nhắc gì, không tính sao nhãng), và bật sớm hơn giờ tự
         # bật cũng được (vẫn tự tắt lúc auto_stop_at).
-        self.manual = manual
         self.last_vdi_work = None  # lần cuối đang làm trong VDI (clock); ngày nghỉ làm bù dùng để biết xong buổi chưa
         self.on_start = on_start  # gọi 1 lần khi chắc chắn chạy (trong khung giờ, không phải ngày nghỉ): mở bot
         self.probe = probe
@@ -205,11 +204,23 @@ class Tracker:
         self.notifier = notifier
         self.run_housekeeping = run_housekeeping
         # recheck: bot vừa đổi ngày nghỉ / nghỉ phép -> vòng kế tiếp đọc lại ghi chú ngay, không chờ hết phút.
-        self.state = {"paused": threading.Event(), "recheck": threading.Event(), "last": None, "perf": "",
-                      "platform": "", "probe_warnings": []}
+        # quit: /tatapp (bot Telegram) xin tắt app: vòng kế tiếp chốt số liệu rồi thoát.
+        # manual: chế độ làm bù; /lambu on|off đổi được khi đang chạy (xem thuộc tính manual).
+        self.state = {"paused": threading.Event(), "recheck": threading.Event(), "quit": threading.Event(),
+                      "last": None, "perf": "", "platform": "", "probe_warnings": [], "manual": bool(manual)}
         self.alerts = RealtimeAlerts(cfg)
         self.state["alerts"] = self.alerts  # /status, /nudge đọc bộ đếm sao nhãng hôm nay
         self.perf = PerfMeter(self.mono)
+
+    @property
+    def manual(self):
+        """Chế độ làm bù: bật bằng lam_bu_ngoai_gio (--manual) hoặc /lambu on. Đọc từ state dùng chung với bot nên
+        /lambu đổi giữa chừng có hiệu lực ngay ở vòng kế tiếp."""
+        return bool(self.state.get("manual"))
+
+    @manual.setter
+    def manual(self, value):
+        self.state["manual"] = bool(value)
 
     @property
     def persona(self):
@@ -602,6 +613,10 @@ class Tracker:
                         self.submit("holidays", holidays.background_check, cfg, now_dt.date())
                     if catch_up and not off:
                         self.submit("catchup", catch_up, self.day)
+                if self.state["quit"].is_set():  # /tatapp: bot đã báo người dùng trước khi đặt cờ
+                    log.info("Bạn tắt app qua Telegram (/tatapp): chốt số liệu rồi thoát.")
+                    audit("QUIT_REQUEST", hhmm)
+                    return "quit"
                 if hhmm != minute and os.path.exists(flag):  # mỗi phút xem có yêu cầu khởi động lại không
                     self._drop_flag(flag)
                     log.info("Có yêu cầu khởi động lại (khoi_dong_lai): chốt số liệu rồi thoát.")

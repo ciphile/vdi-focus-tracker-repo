@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.11.0 (`focus/__init__.py`) |
+| Phiên bản | 2.12.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -780,6 +780,7 @@ Mỗi tính năng: làm gì · bật/tắt · khoá cấu hình · tình huống
 | 4.20 | Giờ bot tự bật / tắt | `/giobot` `/hours` | `/giobot mac_dinh` | `auto_start_at`, `auto_stop_at` |
 | 4.21 | Gửi bù, tin nhắn cũ, báo lỗi | — | — | — |
 | 4.22 | Báo cáo HTML | `/report` | — | `report_refresh_minutes`, `keep_reports_days` |
+| 4.23 | Chạy 24/24, chế độ làm bù (OT), tắt app từ Telegram | `/chay247` `/lambu` `/tatapp` | `/chay247 off` `/lambu off` | `run_on_off_days`, `auto_start_at`, `auto_stop_at` |
 
 ### 4.1 Đo tập trung, điểm tập trung, điểm tổng, streak
 
@@ -1631,7 +1632,8 @@ Chưa đủ số liệu (cần ít nhất 5 ngày làm việc) để tìm giờ 
 | `/on [ngày]` | Huỷ ngày nghỉ / nghỉ phép |
 | `/pause` · `/resume` | Tạm dừng / theo dõi lại (họp dài, việc riêng). Đang tạm dừng: không lấy mẫu, không cảnh báo, bỏ mốc tiến độ; tổng kết ngày / tuần và hỏi tổng kết vẫn gửi đúng giờ. Sang ngày mới thì tự bỏ tạm dừng của hôm trước |
 | `extra_off_days` | Ngày nghỉ cố định trong settings.json, ví dụ `["2026-12-24"]` |
-| `run_on_off_days: true` | Lịch tự bật cũng chạy cả ngày nghỉ (không nhắc), ghi giờ làm bù trong VDI như khi bạn tự bật |
+| `run_on_off_days: true` | Lịch tự bật cũng chạy cả ngày nghỉ (không nhắc), ghi giờ làm bù trong VDI như khi bạn tự bật. Bật từ Telegram: `/chay247 on` (mục 4.23) |
+| `/lambu on` · `/lambu off` | Đổi chế độ làm bù / thường khi app đang chạy (mục 4.23) |
 | `lam_bu_ngoai_gio.bat` / `start_tracker.bat` (bạn tự bật) | Ngày nghỉ vẫn chạy: chỉ ghi giờ làm trong VDI (làm bù), không nhắc, không tính sao nhãng, không chấm điểm. Làm xong (đã qua `work_end` và 30 phút không làm trong VDI) bot gửi ngay **🌙 Tổng kết làm bù** (giờ OT, khoảng giờ, OT 14 ngày, file HTML), một lần mỗi ngày. Máy ngủ / tắt trước đó thì sáng ngày làm việc kế tiếp bot báo (mục 1, «Giờ làm chính thức và làm thêm ngoài giờ»). Buổi nghỉ phép nửa ngày thì vẫn không đo |
 
 | Loại nghỉ | Không đo, không nhắc | Việc theo giờ | Mục tiêu |
@@ -1727,7 +1729,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.11.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.12.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1857,6 +1859,47 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 | Mẫu | `sample/bao-cao-mau.html` (ngày), `sample/bao-cao-tuan-mau.html` (tuần); `python focus_tracker.py demo` tạo cả hai từ dữ liệu giả trong `data/demo` |
 | Làm mới tự động | `report_refresh_minutes` > 0: tracker ghi lại file mỗi N phút (mặc định 0 = chỉ khi cần) |
 
+### 4.23 Chạy 24/24, chế độ làm bù, tắt app từ Telegram (`/chay247`, `/lambu`, `/tatapp`)
+
+Bot nằm **bên trong** app: app đang chạy thì bot mới nhận lệnh. App đã tắt thì không lệnh Telegram nào bật lại được; phải bật trên máy (`start_tracker.vbs`, `lam_bu_ngoai_gio.bat`) hoặc chờ máy tự bật.
+
+| Gõ | Làm gì | Hiệu lực | Lưu ở đâu |
+|---|---|---|---|
+| `/chay247` | Xem app có đang chạy 24/24 không | — | — |
+| `/chay247 on` | Giờ bot bật 00:00 – tắt 24:00, `run_on_off_days` = true (chạy cả cuối tuần, ngày lễ, ngày `/off`) | Ngay. Lịch tự bật của máy đổi sang 00:00 | DB (`run_on_off_days`, `auto_start_at`, `auto_stop_at`, `run247_prev`) + `settings.json` |
+| `/chay247 off` | Trả lại giờ bật/tắt và `run_on_off_days` như trước khi bật 24/24 | Ngay. Đã quá giờ tắt cũ, hoặc hôm nay là ngày nghỉ: chốt số liệu rồi tắt app | Như trên, xoá `run247_prev` |
+| `/lambu` | Xem chế độ đang dùng: làm bù (OT) hay thường | — | — |
+| `/lambu on` | Chế độ làm bù, giống bật app bằng `lam_bu_ngoai_gio.bat` | Ngay, giữ tới khi app tắt (không lưu) | RAM |
+| `/lambu off` | Chế độ thường | Ngay. Hôm nay là ngày nghỉ và không chạy 24/24: chốt số liệu làm bù rồi tắt app | RAM |
+| `/tatapp` | Tắt hẳn app (tracker + bot). **Luôn hỏi OK**, kể cả gõ lệnh | Bấm OK: bot báo trước, vòng kế tiếp (~5 giây) chốt số liệu rồi thoát | — |
+
+| Chế độ | Ngày làm việc, trong giờ làm | Ngày làm việc, ngoài giờ làm | Ngày nghỉ (cuối tuần, lễ, `/off`) |
+|---|---|---|---|
+| Thường | Đo, nhắc như bình thường | Chỉ ghi giờ làm trong VDI (OT), không nhắc | App không chạy (trừ khi `/chay247 on`) |
+| Làm bù (`/lambu on`) | Như thường | Như thường | Chạy, chỉ ghi giờ làm trong VDI, không nhắc, không chấm điểm; làm xong gửi 🌙 tổng kết làm bù |
+| 24/24 (`/chay247 on`) | Như thường | Như thường | Chạy, chỉ ghi giờ làm trong VDI, không nhắc |
+
+```
+Chạy 24/24 thật sự cần cả hai:
+  /chay247 on                       -> app không tự tắt, chạy cả ngày nghỉ
+  Windows: Settings > System > Power & sleep (Power & battery)
+           Sleep = Never, gập nắp = Do nothing
+                                    -> máy không ngủ (bot không đổi được cài đặt này)
+```
+
+| Sau `/tatapp`, app tự bật lại khi | Ghi chú |
+|---|---|
+| Giờ tự bật (`auto_start_at`) ngày làm việc tới | Task Scheduler (Windows) / launchd (Mac) |
+| Lần đăng nhập Windows tới, hoặc máy thức dậy sau khi ngủ | Chỉ khi đang trong khung giờ chạy; ngày nghỉ thì thoát im lặng (trừ khi 24/24) |
+| Bạn nhấp đúp `start_tracker.vbs` (Mac: `start_tracker.command`), hoặc `lam_bu_ngoai_gio.bat` ngày nghỉ | Ngay |
+
+| Tình huống | Bot làm |
+|---|---|
+| Lệnh `/tatapp` hoặc `/lambu` gửi lúc app đang tắt (tin cũ) | Bỏ qua, báo «Bỏ qua lệnh … bạn gửi lúc … (khi đó app chưa chạy)», để app vừa bật không tắt ngay |
+| `/chay247 on` hai lần, hoặc đổi `/giobot` giữa chừng rồi bật lại | Giữ cài đặt gốc lúc bật lần đầu; `/chay247 off` trả lại đúng cài đặt đó |
+| `/chay247 off` mà giờ cũ không còn hợp lệ (vd. vừa dời giờ tổng kết ra sau giờ tắt cũ) | Không đổi, báo lỗi, gợi ý đặt giờ bằng `/giobot` |
+| Không ghi được `settings.json` | Cài đặt mới vẫn có hiệu lực (lưu trong DB), bot báo lý do |
+
 ---
 
 ## 5. Danh sách lệnh
@@ -1865,7 +1908,7 @@ Bảng màu «Pop Art cổ điển»: nền kem, chữ đen, viền và bóng n�
 
 Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `ACTIONS`, nhóm `HELP_GROUPS`, ví dụ `EXAMPLES`), cùng nguồn với menu lệnh và `/help` của bot.
 
-- Lệnh gạch chéo (`/giobot 08:30 18:00`, `/leave chieu`) **chạy ngay, không hỏi lại**, vì không cần đoán ý.
+- Lệnh gạch chéo (`/giobot 08:30 18:00`, `/leave chieu`) **chạy ngay, không hỏi lại**, vì không cần đoán ý. Riêng `/tatapp` (tắt hẳn app) luôn hỏi OK, vì tắt rồi thì không bật lại từ Telegram được.
 - Nhắn tự nhiên mà có ghi / đổi dữ liệu thì bot gửi **thẻ xác nhận**, bấm ✅ OK mới làm (cột "cần OK?"). Xem mục 6.
 - `/help` (`/start`) in mọi tính năng và mọi lệnh kèm ví dụ. Gõ lệnh không có: «Không có lệnh này.» + danh sách lệnh.
 - `/skip`: trong lúc bot hỏi từng câu (`/plan`, `/review`), bỏ qua câu đang hỏi (như gõ «bỏ qua»).
@@ -1925,6 +1968,9 @@ Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `
 | Lệnh | Action | Tham số | Nhắn tự nhiên cần OK? | Làm gì | Ví dụ |
 |---|---|---|---|---|---|
 | `/giobot` `/hours` | `gio_bot` | `start` (HH:MM, tuỳ chọn), `stop` (HH:MM, tuỳ chọn), `time` (HH:MM, tuỳ chọn), `reset` (mac_dinh, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Giờ bot tự bật / tự tắt (thứ 2 – thứ 6). Không kèm giờ: xem. Đổi xong máy tự bật bot đúng giờ mới từ hôm sau (Task Scheduler / launchd); giờ tắt có hiệu lực ngay | `/giobot` · `/giobot 08:30 18:00` · `/giobot bat 08:30` · `/giobot tat 19:00` · `/giobot mac_dinh` · «bật bot lúc 8 rưỡi» · «tắt bot lúc 6 giờ chiều» · «cho bot chạy từ 8h đến 18h» |
+| `/chay247` | `chay_24_24` | `state` (on / off, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Chạy 24/24: bot bật 00:00 – tắt 24:00, chạy cả cuối tuần, ngày lễ (ngày nghỉ, ngoài giờ làm chỉ ghi giờ làm trong VDI, không nhắc). Máy phải để không ngủ. off: về giờ cũ | `/chay247` · `/chay247 on` · `/chay247 off` · «cho app chạy 24/24» |
+| `/lambu` | `che_do_lam_bu` | `state` (on / off, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Chế độ làm bù (OT) như lam_bu_ngoai_gio: on = ngày nghỉ vẫn ghi giờ làm trong VDI, không nhắc; off = chế độ thường (ngày nghỉ thì app tắt luôn). Giữ tới khi app tắt | `/lambu` · `/lambu on` · `/lambu off` · «bật chế độ OT» |
+| `/tatapp` | `tat_app` | — | có (gõ lệnh cũng phải OK) | Tắt hẳn app từ Telegram. Bật lại: start_tracker trên máy, hoặc máy tự bật giờ tự bật tới | `/tatapp` · «tắt app đi» |
 | `/aistatus` | `xem_ai` | — | không | AI đang dùng model nào, đã gọi bao nhiêu lần, bao nhiêu từ | `/aistatus` |
 | `/clearcache` | `xoa_cache_ai` | — | có | Xoá cache model và nhận xét AI đã lưu (khi AI trả lời lạ) | `/clearcache` |
 | `/perf` | `xem_hieu_nang` | — | không | Tracker đang tốn bao nhiêu CPU/RAM | `/perf` |
@@ -3110,7 +3156,8 @@ Mọi thứ nằm trong thư mục app, trên máy bạn (`data_dir` = `data`, `
 | `pace_check_enabled` | `/pace on/off` |
 | `energy_auto_enabled` | `/autoenergy on/off` |
 | `break_enabled`, `break_minutes`, `water_enabled`, `water_minutes` | `/break`, `/water` |
-| `auto_start_at`, `auto_stop_at`, `hours_orig` | `/giobot` (`hours_orig` = giờ trong settings.json trước lần đổi đầu, để `mac_dinh` trả lại) |
+| `auto_start_at`, `auto_stop_at`, `hours_orig` | `/giobot` (`hours_orig` = giờ trong settings.json trước lần đổi đầu, để `mac_dinh` trả lại), `/chay247` |
+| `run_on_off_days`, `run247_prev` | `/chay247` (`run247_prev` = giờ bật/tắt và `run_on_off_days` trước khi bật 24/24, để `/chay247 off` trả lại) |
 | `ai_review_retry` | Đánh giá AI đang chờ gửi lại |
 
 Đổi qua Telegram rồi muốn về giá trị trong file: `/style mac_dinh`, `/aireview mac_dinh`, `/encourage mac_dinh`, `/nudge mac_dinh`, `/pace mac_dinh`, `/break mac_dinh`, `/water mac_dinh`, `/giobot mac_dinh`, `/vdi mac_dinh`.
@@ -3200,7 +3247,7 @@ Không bắt buộc. Chỉ cần ghi dòng muốn đổi; dòng không có dùng
 | `afternoon_boost_at` | `"14:30"` | Câu khích lệ buổi chiều (`""` = tắt) |
 | `weekly_report_day`, `weekly_report_at` | `"fri"`, `"17:05"` | Ngày (`mon`…`sun`) và giờ tổng kết tuần (nên sau `daily_summary_at`) |
 | `daily_focus_goal_hours` | `4` | Mục tiêu giờ tập trung sâu mỗi ngày (> 0) |
-| `run_on_off_days` | `false` | `true` = vẫn chạy và ghi số liệu cuối tuần / lễ / ngày nghỉ (không nhắc) |
+| `run_on_off_days` | `false` | `true` = vẫn chạy và ghi số liệu cuối tuần / lễ / ngày nghỉ (không nhắc). Đổi nhanh `/chay247` (mục 4.23) |
 | `extra_off_days` | `[]` | Ngày nghỉ thêm, ví dụ `["2026-12-24"]` |
 
 **Đo đạc, nhận VDI**
@@ -3502,7 +3549,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.11.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.12.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

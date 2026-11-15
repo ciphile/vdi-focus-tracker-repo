@@ -68,7 +68,7 @@ CANCEL_RE = re.compile(r"(?<![a-z])(huy|khong nghi nua|thoi khong nghi|khong ngh
 FILLER = ("", "nhe", "nha", "a", "nhe ban", "ban nhe", "nghe", "di", "luon")
 
 VIEW_QUESTIONS = {"canh_bao_tien_do", "doi_muc_nhac", "nhac_nghi_ngoi", "nhac_uong_nuoc", "gio_bot",
-                  "tu_tinh_nang_luong", "chon_app_vdi"}
+                  "tu_tinh_nang_luong", "chon_app_vdi", "chay_24_24", "che_do_lam_bu"}
 FILLER = r"(?:(?:minh|em|toi|anh|chi|se|da|cu)\s+)?"  # "mai MÌNH làm", "nhắc MÌNH nghỉ ngơi"
 _KW_CACHE = {}
 
@@ -158,6 +158,10 @@ def by_rules(text, today=None):
         name, kind = action.params[0][:2]
         value = (nudge_lookup(text) if kind == "nudgelevel" else vdi_lookup(text) if kind == "vdiclient"
                  else _word_lookup({"onoff": ONOFF, "tone": TONE_WORDS, "encmode": ENC_WORDS}[kind], text))
+        if not value and action.name == "che_do_lam_bu" and re.search(r"(?<![a-z])(che do|mode) thuong(?![a-z])", folded):
+            value = "off"  # "về chế độ thường"
+        if not value and action.name == "chay_24_24" and not _looks_like_question(folded):
+            value = "on"  # "cho app chạy 24/24"
         return action, ({name: value} if value else {})
     if action.name in ("bao_nghi", "nghi_phep"):
         found = _leave_by_rules(text, folded, rest, kw, today)
