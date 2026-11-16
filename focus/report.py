@@ -302,9 +302,11 @@ def _late_rows(rows):
     return out
 
 
-def summary_text(a, note, streak_days=None, late=None, now=None):
+def summary_text(a, note, streak_days=None, late=None, now=None, ot_deep=False):
     """Tổng kết dạng chữ cho Telegram (/today, tổng kết cuối ngày): chia mục, gạch ngang, bullet, thụt lề, ít emoji.
-    late: late_ot() (OT ngày trước làm sau giờ báo cáo, chỉ nhắc lại, không cộng vào ngày này)."""
+    late: late_ot() (OT ngày trước làm sau giờ báo cáo, chỉ nhắc lại, không cộng vào ngày này).
+    ot_deep: thêm dòng "Tập trung chuyên sâu khi OT" (chỉ /today). Chỉ là dòng hiện thêm: số đó đã nằm trong
+    "Tập trung sâu" của ngày (cách đo, điểm không đổi)."""
     if not a["has_data"]:
         return "\n".join([f"{a['day']}: chưa có dữ liệu." + (f"\n{leave_line(a)}" if a.get("leave") else "")]
                          + note_lines(note))
@@ -312,7 +314,8 @@ def summary_text(a, note, streak_days=None, late=None, now=None):
     head = f"TỔNG KẾT {DAY_NAMES[d.weekday()].upper()} {d:%d/%m/%Y}"
     if a.get("off"):  # ngày nghỉ bật tracker làm bù: chỉ có giờ làm trong VDI, không chấm sao nhãng / điểm
         lines = _section(head, [f"  Ngày nghỉ ({a['off']}), bạn bật bot làm bù {fmt_t(a['first'])}–{fmt_t(a['last'])}"])
-        rows = [f"  • Làm bù trong VDI: {fmt_dur(a['ot'])}", f"  • Tập trung sâu: {fmt_dur(a['deep'])}"]
+        rows = [f"  • Làm bù trong VDI: {fmt_dur(a['ot'])}",
+                f"  • {'Tập trung chuyên sâu khi OT' if ot_deep else 'Tập trung sâu'}: {fmt_dur(a['deep'])}"]
         if a["blocks"]:
             rows.append("  • Khối tập trung: " + ", ".join(f"{fmt_t(b['start'])}–{fmt_t(b['end'])}" for b in a["blocks"]))
         rows.append("  Ngày nghỉ bot chỉ cộng giờ làm trong VDI, không tính sao nhãng, không chấm điểm.")
@@ -341,6 +344,10 @@ def summary_text(a, note, streak_days=None, late=None, now=None):
     vdi_m, ot_m = mins(a.get("vdi")), mins(a.get("ot"))
     rows = [f"  • Trong giờ làm: {fmt_dur(vdi_m * 60)}",
             f"  • Làm ngoài giờ (OT): {fmt_dur(ot_m * 60)}" if ot_m else "  • Làm ngoài giờ (OT): chưa có"]
+    if ot_m and ot_deep:
+        rows.append(f"  • Tập trung chuyên sâu khi OT: {fmt_dur(a.get('deep_ot', 0))}"
+                    + (" (đã tính trong Tập trung sâu ở trên)" if a.get("deep_ot") else
+                       " (OT chưa có khối làm liền đủ dài)"))
     if ot_m:
         rows.append("      OT tính cho đúng ngày làm (qua 00:00 là ngày mới)")
     lines += _section(f"THỰC LÀM TRONG VDI NGÀY {d:%d/%m}: {fmt_dur((vdi_m + ot_m) * 60)}", rows)

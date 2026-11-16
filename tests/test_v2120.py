@@ -299,3 +299,55 @@ class TrackerTest(TempCase):
         tr, fc = self.make(FRIDAY, "23:00")
         self.assertEqual(tr.run(), "off_day")
         self.assertLess(fc.t, ts(SATURDAY, "00:01"))
+
+
+class OtDeepTodayTest(TempCase):
+    """v2.12.1: /today có dòng "Tập trung chuyên sâu khi OT"; tổng kết 17:00 và HTML giữ như cũ."""
+    TUE, SAT = "2026-10-13", "2026-10-17"
+
+    def setUp(self):
+        super().setUp()
+        from tests.helpers import insert_run
+        self.db = open_db(db_path(self.cfg))
+        self.addCleanup(self.db.close)
+        insert_run(self.db, self.TUE, "09:00", 60)
+        insert_run(self.db, self.TUE, "17:30", 40)   # OT liền 40 phút = khối tập trung sâu
+        insert_run(self.db, self.SAT, "09:00", 50)   # làm bù thứ Bảy
+
+    def text(self, day, **kw):
+        from focus.analysis import analyze
+        from focus.report import summary_text
+        return summary_text(analyze(self.db, self.cfg, day), {}, **kw)
+
+    def test_today_shows_ot_deep_line_summary_does_not(self):
+        a = __import__("focus.analysis", fromlist=["analyze"]).analyze(self.db, self.cfg, self.TUE)
+        self.assertAlmostEqual(a["deep_ot"], 40 * 60, delta=60)
+        today = self.text(self.TUE, ot_deep=True)
+        self.assertIn("• Tập trung chuyên sâu khi OT: 40m (đã tính trong Tập trung sâu ở trên)", today)
+        self.assertNotIn("chuyên sâu khi OT", self.text(self.TUE), "tổng kết 17:00 giữ như cũ")
+        self.assertEqual(today.replace(
+            "  • Tập trung chuyên sâu khi OT: 40m (đã tính trong Tập trung sâu ở trên)\n", ""), self.text(self.TUE),
+            "chỉ thêm đúng một dòng, số liệu khác không đổi")
+
+    def test_short_ot_and_no_ot(self):
+        insert = __import__("tests.helpers", fromlist=["insert_run"]).insert_run
+        wed = "2026-10-14"
+        insert(self.db, wed, "09:00", 60)
+        insert(self.db, wed, "17:30", 10)
+        self.assertIn("Tập trung chuyên sâu khi OT: 0m (OT chưa có khối làm liền đủ dài)",
+                      self.text(wed, ot_deep=True).replace("0 phút", "0m"))
+        thu = "2026-10-15"
+        insert(self.db, thu, "09:00", 60)
+        self.assertNotIn("chuyên sâu khi OT", self.text(thu, ot_deep=True), "không làm OT thì không có dòng")
+
+    def test_off_day(self):
+        self.assertIn("• Tập trung chuyên sâu khi OT: 50m", self.text(self.SAT, ot_deep=True))
+        self.assertIn("• Tập trung sâu: 50m", self.text(self.SAT))
+
+    def test_today_command_passes_flag(self):
+        with mock.patch.object(actions, "summary_text", return_value="x") as st, \
+                mock.patch.object(actions, "late_ot", return_value=None):
+            bot = mock.Mock(cfg=self.cfg, db=self.db)
+            bot.today.return_value = self.TUE
+            actions._today(bot, {})
+        self.assertTrue(st.call_args.kwargs.get("ot_deep"))

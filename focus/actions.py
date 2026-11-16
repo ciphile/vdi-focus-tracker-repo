@@ -563,7 +563,7 @@ def _today(bot, args):
     day = _past_day(bot, args, "/today")
     if day:
         bot.send(summary_text(analyze(bot.db, bot.cfg, day), get_note(bot.db, day), streak(bot.db, bot.cfg, day),
-                              late_ot(bot.db, bot.cfg, day)))
+                              late_ot(bot.db, bot.cfg, day), ot_deep=True))
 
 
 def _report(bot, args):
