@@ -98,6 +98,7 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Chế độ làm bù (OT) / thường khi app đang chạy | `/lambu on`, `/lambu off` | Như bật bằng `lam_bu_ngoai_gio.bat`: ngày nghỉ vẫn ghi giờ làm trong VDI; off ngày nghỉ thì app chốt số liệu rồi tắt |
 | Tắt hẳn app từ Telegram | `/tatapp` | Luôn hỏi OK; chốt số liệu rồi thoát. Bật lại trên máy hoặc chờ máy tự bật |
 | Xem tình trạng đầy đủ | `/status` | Lúc này, hôm nay, cài đặt, AI, hệ thống |
+| Hỏi vừa vắng bao lâu | `/vang`, «mình vừa inactive bao lâu?» | Lần vắng gần nhất (giờ, bao lâu, khoá máy hay không), lúc này có đang vắng không, các lần vắng ≥ 5 phút trong ngày; AI cũng nhận số này |
 | Dùng chung cho đồng nghiệp | `config/persona.json` | Không ghi cứng tên ai; mỗi người bot riêng, key riêng |
 | Lấy chat ID lúc cài | `start_tracker.bat` | Chạy được mọi giờ, mọi ngày |
 | Kiểm tra máy thật từng phần | `kiem_tra_may.bat [check ai mom autostart vdi tests]` | Có bản Mac `.command` riêng |

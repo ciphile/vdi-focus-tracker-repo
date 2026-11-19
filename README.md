@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.12.1 (`focus/__init__.py`) |
+| Phiên bản | 2.13.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -761,7 +761,7 @@ Mỗi tính năng: làm gì · bật/tắt · khoá cấu hình · tình huống
 | 4.1 | Đo tập trung, điểm tập trung, **điểm tổng + robot quà tặng**, streak, xem lại kế hoạch / năng lượng / ngày cũ | `/today [ngày]` `/score` | — | `daily_focus_goal_hours`, `min_focus_block_minutes` |
 | 4.2 | Nhận trạng thái cửa sổ VDI; chọn đo Citrix hay Windows App | `/vdi` | — | `vdi_client`, `vdi_processes`, `vdi_session_processes`, `vdi_browser_title_keywords` |
 | 4.3 | Nhắc khi sao nhãng | `/nudge` | `/nudge off` | `nudge_level` |
-| 4.4 | Rời máy / quay lại, VDI tự đóng | — | `away_alert_minutes: 0`, `vdi_closed_alert: false` | `away_alert_minutes`, `vdi_closed_alert` |
+| 4.4 | Rời máy / quay lại, VDI tự đóng, hỏi vừa vắng bao lâu | `/vang` | `away_alert_minutes: 0`, `vdi_closed_alert: false` | `away_alert_minutes`, `vdi_closed_alert` |
 | 4.5 | Nhắc cất điện thoại, phóng to VDI | — | `/nudge off` | `phone_pattern_count`, `fullscreen_tip_minutes` |
 | 4.6 | Cảnh báo tiến độ | `/pace` | `/pace off` | `pace_check_enabled` |
 | 4.7 | Nhắc đứng dậy, uống nước | `/break` `/water` | `/break off` `/water off` | `break_reminder_*`, `water_reminder_*` |
@@ -1271,6 +1271,27 @@ Bạn đi đâu lâu thế?
 
 VDI ở trước mà không gõ (họp chỉ nghe) thì tin có thêm «(Đang họp chỉ nghe trong VDI thì bỏ qua tin này, hoặc gõ /pause.)».
 
+#### Hỏi lại: vừa vắng bao lâu (`/vang`)
+
+Gõ `/vang`, hoặc hỏi tự nhiên «mình vừa inactive bao lâu?», «hôm nay mình rời máy mấy lần?». Chế độ hỏi AI (`/ask on`) cũng trả lời được, vì mỗi câu hỏi gửi AI có kèm lần vắng gần nhất và các lần vắng hôm nay.
+
+| | |
+|---|---|
+| Lần vắng gần nhất | Quãng không chạm phím/chuột ≥ 1 phút (hoặc khoá máy / máy ngủ / tắt app) đã kết thúc gần nhất: từ mấy giờ tới mấy giờ, bao lâu, loại |
+| Lúc này | Đang không ai chạm máy thì báo thêm «đang không ai chạm từ …», lấy từ mẫu mới nhất trong RAM (chưa kịp ghi DB) |
+| Các lần vắng trong ngày | Quãng ≥ 5 phút, tối đa 10 lần gần nhất, kèm số lần và tổng. Gửi AI tối đa 5 lần (bối cảnh AI không phình theo ngày) |
+| Phạm vi | Cả giờ trưa và ngoài giờ làm; bỏ quãng trước lần đầu dùng máy trong ngày. `/vang hôm qua`, `/vang 14/10` xem ngày đã qua |
+| Số liệu | Chỉ đọc lại các quãng mà phần tính số liệu đã có (cùng quy tắc gộp chạm lẻ). Không đổi giờ tập trung, ngồi yên, rời máy hay điểm |
+
+```
+» /vang
+🚶 Lần vắng gần nhất: 10:30–10:54, 24m (khoá máy / máy ngủ / tắt app).
+
+Các lần vắng từ 5 phút: 2 lần, tổng 32m
+  • 09:30–09:38 · 8m · rời máy, không chạm phím/chuột
+  • 10:30–10:54 · 24m · khoá máy / máy ngủ / tắt app
+```
+
 ### 4.5 Nhắc cất điện thoại, gợi ý phóng to VDI
 
 | | Cất điện thoại | Phóng to VDI |
@@ -1730,7 +1751,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.12.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.13.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1920,6 +1941,7 @@ Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `
 | Lệnh | Action | Tham số | Nhắn tự nhiên cần OK? | Làm gì | Ví dụ |
 |---|---|---|---|---|---|
 | `/today` `/score` | `xem_hom_nay` | `day` (pastdate, tuỳ chọn) | không | Giờ tập trung sâu, trong/ngoài VDI, điểm, streak, kế hoạch đầu ngày, năng lượng, output, issue. Kèm ngày để xem lại ngày đã qua | `/today` · `/today hôm qua` · `/today 14/10` · «hôm nay mình tập trung được bao nhiêu rồi» · «xem kế hoạch hôm nay» |
+| `/vang` | `xem_vang` | `day` (pastdate, tuỳ chọn) | không | Lần vắng gần nhất (không chạm phím/chuột, khoá máy, máy ngủ): mấy giờ tới mấy giờ, bao lâu; lúc này có đang vắng không; các lần vắng từ 5 phút trong ngày. Kèm ngày để xem ngày đã qua | `/vang` · `/vang hôm qua` · «mình vừa inactive bao lâu» · «hôm nay mình rời máy mấy lần» |
 | `/status` | `xem_trang_thai` | — | không | Tình trạng đầy đủ: lúc này trong hay ngoài VDI, số liệu hôm nay, số lần đã nhắc, cài đặt, AI đã dùng bao nhiêu lượt/từ, còn bao nhiêu quota, CPU/RAM | `/status` |
 | `/report` | `gui_bao_cao` | `day` (pastdate, tuỳ chọn) | không | File báo cáo HTML chi tiết (biểu đồ theo giờ, khối tập trung). Kèm ngày để lấy ngày đã qua | `/report` · `/report hôm qua` |
 | `/week` | `xem_tuan` | — | không | Tổng kết tuần: giờ vàng, ngày tốt/kém, issue lặp lại | `/week` |
@@ -3550,7 +3572,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.12.1`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.13.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

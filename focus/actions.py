@@ -24,7 +24,7 @@ import sys
 import unicodedata
 from dataclasses import dataclass, field
 
-from . import ai_client, autostart, energy, messages, pace, persona, prefs
+from . import absence, ai_client, autostart, energy, messages, pace, persona, prefs
 from .analysis import analyze, daily_stats, day_goal_hours, golden_hours, off_day, streak
 from .config import DEFAULTS, STOP_AFTER_KEYS, VDI_CLIENT_NAMES, norm_hhmm, run_window_conflict
 from .logs import audit, get_logger
@@ -564,6 +564,13 @@ def _today(bot, args):
     if day:
         bot.send(summary_text(analyze(bot.db, bot.cfg, day), get_note(bot.db, day), streak(bot.db, bot.cfg, day),
                               late_ot(bot.db, bot.cfg, day), ot_deep=True))
+
+
+def _vang(bot, args):
+    """/vang: lần vắng gần nhất + các lần vắng từ 5 phút trong ngày (chỉ đọc số liệu có sẵn)."""
+    day = _past_day(bot, args, "/vang")
+    if day:
+        bot.send(absence.view_text(analyze(bot.db, bot.cfg, day), bot.cfg, getattr(bot, "state", None), day=day))
 
 
 def _report(bot, args):
@@ -1387,6 +1394,14 @@ ACTIONS = [
            _golden, keywords=["gio vang"]),
     Action("xem_trang_thai", ["/status"], "Trạng thái lúc này", "Lúc này đang trong VDI hay ngoài, idle bao lâu",
            _status, keywords=["trang thai", "dang lam gi", "status"]),
+    Action("xem_vang", ["/vang"], "Vừa vắng bao lâu",
+           "Xem lần vắng gần nhất (không chạm phím/chuột, khoá máy, máy ngủ: từ mấy giờ tới mấy giờ, bao lâu), lúc "
+           "này có đang vắng không, và các lần vắng từ 5 phút trong ngày; trả lời câu hỏi kiểu 'mình vừa inactive / "
+           "đi vắng bao lâu'", _vang,
+           params=[("day", "pastdate", "ngày đã qua muốn xem lại (bỏ trống = hôm nay)", False)],
+           keywords=["vua inactive", "inactive bao lau", "vua vang", "vang bao lau", "vang may lan", "vang mat",
+                     "vua roi may", "roi may bao lau", "roi may may lan", "di vang bao lau", "di dau bao lau",
+                     "ngoi yen bao lau", "khong cham phim bao lau"]),
     Action("ghi_ke_hoach", ["/plan"], "Ghi kế hoạch hôm nay",
            "Ghi kế hoạch / 3 việc quan trọng hôm nay (không có nội dung thì bot hỏi từng câu)", _plan,
            params=[("text", "text", "nội dung kế hoạch", False)], writes=True,
@@ -1607,7 +1622,7 @@ def help_text(cfg=None):
 
 # /help: nhóm lệnh + giải thích + ví dụ cụ thể. Thêm action mới thì thêm ví dụ ở đây (thiếu cũng không lỗi).
 HELP_GROUPS = [
-    ("📊 XEM SỐ LIỆU", ["xem_hom_nay", "xem_trang_thai", "gui_bao_cao", "xem_tuan", "xem_gio_vang"]),
+    ("📊 XEM SỐ LIỆU", ["xem_hom_nay", "xem_trang_thai", "xem_vang", "gui_bao_cao", "xem_tuan", "xem_gio_vang"]),
     ("📝 GHI CHÉP TRONG NGÀY", ["ghi_ke_hoach", "ghi_output", "ghi_issue", "ghi_phan_tam", "ghi_viec_ngay_mai",
                                "ghi_nang_luong", "ghi_gio_as400", "tong_ket_ngay"]),
     ("🌴 NGÀY NGHỈ, NGHỈ PHÉP, TẠM DỪNG", ["nghi_phep", "bao_nghi", "bao_di_lam", "tam_dung", "tiep_tuc"]),
@@ -1624,6 +1639,9 @@ EXAMPLES = {
                      "xem kế hoạch hôm nay"]),
     "xem_trang_thai": ("Tình trạng đầy đủ: lúc này trong hay ngoài VDI, số liệu hôm nay, số lần đã nhắc, cài đặt, "
                        "AI đã dùng bao nhiêu lượt/từ, còn bao nhiêu quota, CPU/RAM", ["/status"]),
+    "xem_vang": ("Lần vắng gần nhất (không chạm phím/chuột, khoá máy, máy ngủ): mấy giờ tới mấy giờ, bao lâu; lúc này "
+                 "có đang vắng không; các lần vắng từ 5 phút trong ngày. Kèm ngày để xem ngày đã qua",
+                 ["/vang", "/vang hôm qua", "mình vừa inactive bao lâu", "hôm nay mình rời máy mấy lần"]),
     "gui_bao_cao": ("File báo cáo HTML chi tiết (biểu đồ theo giờ, khối tập trung). Kèm ngày để lấy ngày đã qua",
                     ["/report", "/report hôm qua"]),
     "xem_tuan": ("Tổng kết tuần: giờ vàng, ngày tốt/kém, issue lặp lại", ["/week"]),

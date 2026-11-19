@@ -345,6 +345,9 @@ def _analyze_rows(rows, cfg, day, d0, d1, windows=None, skip=None):
         "ot": tot["ot"], "deep_ot": sum(b["ot"] for b in blocks),
         "windowed": windowed,
         "vdi_closed": vdi_closed, "minimized_spans": min_spans,
+        # Các quãng không chạm phím/chuột (đã gộp, hard = khoá máy / máy ngủ / tracker tắt), CHƯA cắt theo giờ làm:
+        # chỉ để /vang và AI trả lời "vừa vắng bao lâu" (absence.py). Không dùng để tính số liệu nào ở trên.
+        "inactive_spans": [(max(s, d0), min(e, d1), bool(h)) for s, e, h in merged if min(e, d1) > max(s, d0)],
     })
     return result
 

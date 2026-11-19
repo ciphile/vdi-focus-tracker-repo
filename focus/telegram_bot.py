@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-from . import ai_client, energy, errors, holidays, intent, motivation, net, pace, pending, persona, prefs
+from . import absence, ai_client, energy, errors, holidays, intent, motivation, net, pace, pending, persona, prefs
 from .actions import (BY_COMMAND, BY_NAME, NUDGE_NAMES, bot_commands, confirm_card, describe, example, help_text, hours_line,
                       ask_toggle, parse_command_args, parse_times, understood_line, validate)
 from . import __version__
@@ -1000,6 +1000,11 @@ class TelegramBot:
         live = {"luc_nay": now.strftime("%Y-%m-%d %H:%M (%Z, UTC%z)"),
                 "thu": ["thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật"][now.weekday()],
                 "so_lieu_tap_trung_hom_nay": self.stats_line()}
+        try:  # "mình vừa inactive bao lâu?": lần vắng gần nhất + các lần vắng hôm nay (chỉ đọc số liệu có sẵn)
+            live["vang_mat_hom_nay"] = absence.ai_facts(analyze(self.db, self.cfg, self.today()), self.cfg,
+                                                         self.state)
+        except Exception as e:  # không có số liệu vắng thì AI vẫn trả lời được câu khác
+            log.warning("Không lấy được số liệu vắng mặt cho AI: %s", e)
         text, ok = motivation.ask_ai(self.cfg, question, live)
         audit("ASK_AI", f"{len(question.split())} từ, {'ok' if ok else 'lỗi'}")
         footer = "\n\n(Đang ở chế độ hỏi AI: /ask off để tắt)" if self.ask_mode() and ok else ""
