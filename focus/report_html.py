@@ -326,7 +326,7 @@ def note_box(title, body, rot=0.0, raw=False):
             f"<div class='body'>{content or '<i class=mut>chưa nhập</i>'}</div></div>")
 
 
-def pending_box(items, rot=0.0):
+def pending_box(items, rot=0.0, from_tasks=False):
     """Ghi chú "Việc tồn sang ngày mai" (cộng dồn, có ngày bắt đầu tồn). Không có việc tồn: ghi rõ là không có."""
     from .pending import MAX_ITEMS, since_label
     if not items:
@@ -336,7 +336,9 @@ def pending_box(items, rot=0.0):
                    "</small></li>" for k, t, s in items[:MAX_ITEMS])
     more = f"<li class='mut'>… và {len(items) - MAX_ITEMS} việc nữa</li>" if len(items) > MAX_ITEMS else ""
     return note_box("📌 Việc tồn sang ngày mai", f"<ul class='plist'>{rows}{more}</ul>"
-                    "<small class='mut'>Kế hoạch / issue chưa thấy ghi xong trong output, cộng dồn qua các ngày.</small>",
+                    "<small class='mut'>"
+                    + ("Việc chưa xong trong danh sách việc (/viec), tự sang ngày làm việc kế tiếp." if from_tasks else
+                       "Kế hoạch / issue chưa thấy ghi xong trong output, cộng dồn qua các ngày.") + "</small>",
                     rot, raw=True)
 
 
@@ -672,6 +674,33 @@ def week_list(week, goal_h):
             "xanh = tập trung sâu, vạch đứt = mục tiêu, ô số = điểm tổng.</div></div>")
 
 
+def tasks_box(summary, rot=0.0):
+    """Danh sách việc trong ngày (/viec): việc xong, việc thêm mới, việc bỏ. None (chưa dùng danh sách) -> rỗng."""
+    if summary is None:
+        return ""
+    done, new, dropped = summary["done"], summary["new"], summary["dropped"]
+
+    def items(rows, mark):
+        return "".join(f"<li>{mark(t)}{'⚠️ issue: ' if t['kind'] == 'issue' else ''}{esc(t['text'])}</li>"
+                       for t in rows)
+
+    def state(t):
+        if t["done_day"]:
+            return "✓ "
+        if t["dropped_day"]:
+            return "🗑 "
+        return ""
+
+    parts = [f"<b>✅ Đã xong ({len(done)})</b>",
+             f"<ul class='plist'>{items(done, lambda t: '✓ ')}</ul>" if done else "<p><i class=mut>chưa xong việc nào</i></p>",
+             f"<b>➕ Thêm mới hôm nay ({len(new)})</b>",
+             f"<ul class='plist'>{items(new, state)}</ul>" if new else "<p><i class=mut>không thêm việc mới</i></p>"]
+    if dropped:
+        parts += [f"<b>🗑 Đã bỏ ({len(dropped)})</b>", f"<ul class='plist'>{items(dropped, lambda t: '')}</ul>"]
+    parts.append("<small class='mut'>Từ danh sách việc /viec. Việc còn lại xem ô «Việc tồn sang ngày mai».</small>")
+    return note_box("📋 Danh sách việc hôm nay", "".join(parts), rot, raw=True)
+
+
 def notes_section(cfg, note, extra):
     ds = extra.get("distractions")
     dist = esc(note.get("distractions") or "")
@@ -692,13 +721,15 @@ def notes_section(cfg, note, extra):
     as400 = f"{note.get('as400_start')} – {note.get('as400_end') or '?'}" if note.get("as400_start") else ""
     rots = [-1.2, 0.8, -0.6, 1.1, -0.9, 0.5, -1.0]
     return ("<div class='notes'>"
-            + note_box("Kế hoạch đầu ngày", note.get("plan"), rots[0])
+            + tasks_box(extra.get("tasks"), rots[1])
+            + ("" if extra.get("tasks") is not None and not note.get("plan") else
+               note_box("Kế hoạch đầu ngày", note.get("plan"), rots[0]))
             + note_box("Output hôm nay", note.get("output"), rots[1])
             + note_box("Issue / blocker", note.get("issues"), rots[2])
             + note_box("Bị phân tâm bởi", dist, rots[3], raw=True)
             + note_box("Năng lượng (1–5)", en_html, rots[4], raw=True)
             + note_box("Việc đầu tiên ngày mai", note.get("tomorrow"), rots[5])
-            + pending_box(extra.get("pending"), rots[0])
+            + pending_box(extra.get("pending"), rots[0], extra.get("tasks") is not None)
             + note_box("Giờ vào / ra AS400", as400, rots[6])
             + "</div>")
 

@@ -600,7 +600,23 @@ def _hook(bot, field_name, text):
     return fn(field_name, text) if fn else ""
 
 
+def _task_syntax(bot, text):
+    """/plan, /output kèm cú pháp danh sách việc («mới: ...», «xong 1 3») thì làm như /viec. True nếu đã xử lý."""
+    from . import tasks
+    try:
+        ops = tasks.parse(text, bot.today())
+    except tasks.TaskError as e:
+        bot.send(str(e))
+        return True
+    if not ops or ops == [("undo",)]:
+        return False
+    bot.apply_tasks(ops)
+    return True
+
+
 def _plan(bot, args):
+    if args.get("text") and _task_syntax(bot, args["text"]):
+        return
     if args.get("text"):
         save_note(bot.db, bot.today(), {"plan": args["text"]})
         audit("PLAN_SAVED", args["text"])
@@ -612,6 +628,8 @@ def _plan(bot, args):
 
 def _note_line(field_name, label):
     def run(bot, args):
+        if field_name == "output" and _task_syntax(bot, args["text"]):
+            return
         append_note(bot.db, bot.today(), field_name, f"- {args['text']} ({dt.datetime.now():%H:%M})")
         audit("NOTE_" + field_name.upper(), args["text"])
         extra = _hook(bot, field_name, args["text"]) if field_name in ("issues", "output") else ""

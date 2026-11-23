@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.14.0 (`focus/__init__.py`) |
+| Phiên bản | 2.14.1 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1759,7 +1759,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.14.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.14.1
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1995,7 +1995,10 @@ bot:        OK, giữ nguyên danh sách việc.
 
 | Lệnh cũ | Giờ ghi vào đâu |
 |---|---|
-| `/plan` (3 việc quan trọng) | Mỗi dòng thành một việc trong danh sách hôm nay |
+| `/plan` (3 việc quan trọng) | Mỗi dòng thành một việc trong danh sách hôm nay. Kèm cú pháp danh sách việc (`/plan mới: ...`) thì làm y như `/viec`, không ghi đè kế hoạch |
+| `/output` kèm cú pháp (`/output xong 1 3`) | Làm y như `/viec xong 1 3` (output chỉ ghi 1 dòng) |
+
+Báo cáo HTML ngày (`/report`, file trong `reports/`) có ô **📋 Danh sách việc hôm nay**: việc đã xong, việc thêm mới trong ngày (✓ = đã xong, 🗑 = đã bỏ), việc đã bỏ. Việc còn lại nằm ở ô «📌 Việc tồn sang ngày mai». Đã dùng danh sách việc mà chưa ghi `/plan` thì ô «Kế hoạch đầu ngày» trống được ẩn đi.
 | `/issue` | Ghi vào issue hôm nay như cũ + thêm vào danh sách (nhãn «issue») |
 | `/tmrtask` | Thêm vào danh sách ngày làm việc kế tiếp, đánh ⭐ |
 | `/output` | Ghi output như cũ; trùng tên việc trong danh sách thì bot gợi ý «gõ xong N» |

@@ -290,6 +290,20 @@ class BotTaskTest(_Bot):
         self.say("hôm nay tập trung được bao nhiêu rồi")
         self.assertIsNone(self.bot.convo, "tin khác cú pháp: thôi chờ")
 
+    def test_plan_and_output_with_task_syntax_act_like_viec(self):
+        self.say("/viec mới: A")
+        out = self.say("/plan mới: check jira ticket")
+        self.assertIn("➕ Thêm: check jira ticket", out[-1])
+        self.assertEqual(self.names(), ["A", "check jira ticket"], "không còn chữ «mới:» trong tên việc")
+        from focus.storage import get_note
+        self.assertFalse(get_note(self.bot.db, MONDAY).get("plan"), "không ghi đè kế hoạch bằng cú pháp")
+        out = self.say("/output xong 1")
+        self.assertIn("✅ Xong: A", out[-1])
+        self.assertEqual(get_note(self.bot.db, MONDAY).get("output").count("A ("), 1, "output chỉ 1 dòng")
+        self.say("/plan fix job đối soát")
+        self.assertIn("fix job đối soát", self.names())
+        self.assertEqual(get_note(self.bot.db, MONDAY).get("plan"), "fix job đối soát")
+
     def test_syntax_works_any_time(self):
         self.say("mới: Viết spec")
         self.assertEqual(self.names(), ["Viết spec"])
@@ -419,3 +433,36 @@ class TrackerCombineTest(TempCase):
         self.assertIn("focus_1245", names)
         self.assertNotIn("tasks_1245", names, "đã gộp vào tin báo tập trung")
         self.assertEqual(dict(sent)["focus_1245"], (MONDAY, "12:45", True))
+
+
+class HtmlTasksTest(TempCase):
+    def test_daily_html_shows_done_new_dropped(self):
+        from focus import report
+        db = open_db(db_path(self.cfg))
+        self.addCleanup(db.close)
+        tasks.ensure_started(db, self.cfg, MONDAY, off_day)
+
+        def run(text):
+            tasks.apply(db, self.cfg, MONDAY, tasks.parse(text, dt.date.fromisoformat(MONDAY)), off_day)
+        run("mới: A; B; C")
+        run("xong 1")
+        run("bỏ 2")
+        path, _ = report.write_report(db, self.cfg, MONDAY)
+        with open(path, encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("📋 Danh sách việc hôm nay", html)
+        self.assertIn("✅ Đã xong (1)", html)
+        self.assertIn("➕ Thêm mới hôm nay (3)", html)
+        self.assertIn("🗑 Đã bỏ (1)", html)
+        self.assertIn("Việc chưa xong trong danh sách việc", html)
+        self.assertNotIn("Kế hoạch đầu ngày", html, "dùng danh sách việc, chưa ghi /plan: ẩn ô kế hoạch trống")
+
+    def test_html_before_task_list_unchanged(self):
+        from focus import report
+        db = open_db(db_path(self.cfg))
+        self.addCleanup(db.close)
+        path, _ = report.write_report(db, self.cfg, MONDAY)
+        with open(path, encoding="utf-8") as f:
+            html = f.read()
+        self.assertNotIn("Danh sách việc hôm nay", html)
+        self.assertIn("Kế hoạch đầu ngày", html)

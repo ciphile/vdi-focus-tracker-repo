@@ -194,7 +194,8 @@ def write_report(db, cfg, day):
                         (f"review:{day}:%",)).fetchone()
     extra = {"streak": streak(db, cfg, day), "review": review[0] if review else "",
              "distractions": distraction_stats(db, cfg, day), "ot_history": ot_history(db, cfg, day),
-             "late_ot": late_ot(db, cfg, day), "pending": tasks.carry_after(db, cfg, day, off_day)}
+             "late_ot": late_ot(db, cfg, day), "pending": tasks.carry_after(db, cfg, day, off_day),
+             "tasks": tasks.day_summary(db, day)}
     path = os.path.join(cfg["report_dir"], f"focus-{day}.html")
     _write(path, render_html(cfg, a, get_note(db, day), [w for w in week if w], extra))
     return path, a

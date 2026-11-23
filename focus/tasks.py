@@ -467,5 +467,15 @@ def list_text(db, day, title="📋 Việc cần làm hôm nay", howto=True):
     return "\n".join(lines)
 
 
+def day_summary(db, day):
+    """Cho báo cáo HTML ngày: việc xong, việc thêm mới, việc bỏ trong ngày day. None khi day trước ngày bắt đầu dùng."""
+    start = since(db)
+    if not start or day < start:
+        return None
+    return {"done": done_on(db, day),
+            "new": _rows(db, "WHERE created_day=? ORDER BY id", (day,)),
+            "dropped": _rows(db, "WHERE dropped_day=? ORDER BY id", (day,))}
+
+
 def counts(db, day):
     return {"open": len(open_tasks(db, day)), "done_today": len(done_on(db, day))}
