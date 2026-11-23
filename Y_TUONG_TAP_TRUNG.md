@@ -53,7 +53,8 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 | Báo khi rời máy quá lâu, chào khi quay lại | — | Chỉ trong giờ làm, trừ giờ trưa |
 | Báo ngay khi cửa sổ VDI biến mất (Citrix tự ngắt sau khoảng 10–20 phút không dùng) | — | Chỉ 08:00–17:00, trừ trưa, và chỉ khi hôm đó đã làm trong VDI |
 | Nhắc cất điện thoại, gợi ý phóng to VDI | — | Theo kiểu "không chạm máy" lặp lại |
-| Cảnh báo tiến độ lúc 10:30, 14:00, 15:30 | `/pace` | Chậm so với mục tiêu giờ VDI thì nhắc, đúng nhịp thì khen |
+| Cảnh báo tiến độ lúc 15:30 | `/pace` | Chậm so với mục tiêu giờ VDI thì nhắc, đúng nhịp thì khen (10:30 và 14:00 đã thay bằng báo tập trung sâu) |
+| Báo giờ tập trung sâu + AI nhận xét lúc 10:17, 12:45, 15:00 | `/baosau` | Số giờ tập trung sâu tới lúc đó so với nhịp cần, số khối ≥ 20 phút; AI nhận xét 2–3 câu theo giọng. Chỉ ngày làm việc |
 | Nhắc đứng dậy sau 60 phút tập trung, kèm bài tập mắt / vận động | `/break` | Bật/tắt, đổi số phút. Kèm một dữ kiện nghiên cứu thật (Dunstan 2012, Ekelund 2016, Albulescu 2022) |
 | Nhắc uống nước | `/water on` | **Mặc định tắt** khi cài lần đầu; bật bằng `/water on`, đổi số phút. Kèm dữ kiện nghiên cứu (Borghi 1996, Ganio 2011) |
 | Giọng nhắc theo persona | `/style` | Thân mật, vui tươi, hài hước, sếp khó tính; nhắc tên sếp khi lặp lại |
@@ -62,9 +63,10 @@ File này gom mọi ý tưởng từ lúc bàn đến giờ, chia 4 phần: thó
 
 | Tính năng | Lệnh / thời điểm | Ghi chú |
 |---|---|---|
-| Kế hoạch sáng, tổng kết chiều | `/plan`, `/review` | Bot tự hỏi lúc 08:00 và 16:45. Xem lại kế hoạch: `/today` |
+| Kế hoạch sáng, tổng kết chiều | `/plan`, `/review` | Bot tự hỏi tổng kết 16:45. Kế hoạch sáng thành danh sách việc (dòng dưới); `/viec off` thì bot hỏi «3 việc» như cũ |
+| Danh sách việc (kiểu Google Tasks) | `/viec` | Một danh sách đánh số gom kế hoạch, issue, việc mai, việc tồn. Bot gửi 5 phút sau lời chào sáng, 12:45, 16:00 và chờ trả lời 5 phút. Gõ «xong 1 3», «mới: ...», «hoãn 2», «bỏ 4», «sửa 2: ...», «ưu tiên 3», «hạn 2 25/11», «hoàn tác». Việc xong tự vào output |
 | Ghi nhanh output, issue, điều làm phân tâm, việc mai, năng lượng | `/output` `/issue` `/distraction` `/tmrtask` `/energy` | Nhắn tự nhiên cũng được («nãy giờ bận trông em bé khóc» là ghi điều làm phân tâm). Năng lượng 1–5 bạn tự chấm góp 10% điểm tổng, không ảnh hưởng điểm tập trung |
-| Nhắc việc còn tồn mỗi sáng, cộng dồn | Tự động trong lời chào sáng, báo cáo HTML, đánh giá AI | Kế hoạch / issue chưa thấy ghi xong; hôm qua chưa có cập nhật thì thành việc tồn hôm nay (ghi «tồn từ» ngày nào), tối đa 10 ngày làm việc |
+| Nhắc việc còn tồn mỗi sáng, cộng dồn | Danh sách việc, báo cáo HTML, đánh giá AI | Việc chưa xong tự sang ngày làm việc kế tiếp, ghi «tồn từ» ngày nào. `/viec off`: lời chào sáng hiện khối việc tồn như cũ (kế hoạch / issue chưa thấy ghi xong, tối đa 10 ngày làm việc) |
 | Bot tự tính năng lượng khi bạn chưa chấm | Tự động lúc 17:00, `/autoenergy` | Tập trung sâu càng lâu thì năng lượng càng cạn; sao nhãng thì còn dư. Bot gửi số tính được kèm cách tính, `/energy` để sửa |
 | Xem lại một ngày đã qua | `/today hôm qua`, `/today 14/10`, `/report hôm qua` | Số liệu, điểm, kế hoạch, năng lượng, output, issue của ngày đó |
 | Giờ vào/ra AS400 | `/as400 08:10 17:35` hoặc gửi ảnh spooled file | AI chỉ đọc giờ sớm nhất và muộn nhất, hỏi lại trước khi lưu |

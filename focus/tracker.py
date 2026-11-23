@@ -31,7 +31,7 @@ from .logs import audit, get_logger
 from .notifier import Notifier
 from .probe import log_limited
 from .schedule import due_jobs, in_leave, in_run_window, is_work_time, offday_ot_due
-from .storage import SampleWriter, db_path, get_note, get_pref, mark_sent, open_db, set_pref
+from .storage import SampleWriter, db_path, get_note, get_pref, mark_sent, open_db, sent_at, set_pref
 
 log = get_logger()
 
@@ -298,10 +298,11 @@ class Tracker:
         hỏi tổng kết vẫn hỏi (qua Telegram, trả lời trên điện thoại được); cảnh báo tiến độ thì bỏ (chưa đánh dấu
         đã gửi: /resume kịp trong LATE_MINUTES thì vẫn kiểm)."""
         weekday = self.now().weekday()
+        greeted = sent_at(self.db, self.day, "morning")
         jobs = due_jobs(self.cfg, hhmm, weekday, active=active, off=off, note=note, has_bot=bool(self.bot),
-                        leave=leave)
-        if paused:
-            jobs = [j for j in jobs if not j.startswith("pace_")]
+                        leave=leave, morning_age=None if greeted is None else time.time() - greeted)
+        if paused:  # không lấy mẫu: số giờ tập trung chưa đủ để báo tiến độ (danh sách việc vẫn hỏi qua điện thoại)
+            jobs = [j for j in jobs if not j.startswith(("pace_", "focus_"))]
             if "review" not in jobs and "review" in due_jobs(self.cfg, hhmm, weekday, active=True, off=off, note=note,
                                                              has_bot=bool(self.bot), leave=leave):
                 jobs.append("review")
@@ -317,6 +318,16 @@ class Tracker:
             audit("JOB_" + job.upper(), self.day)
             if job.startswith("pace_"):
                 self.submit(job, self._send_pace, self.day, f"{job[5:7]}:{job[7:]}", hhmm)
+                continue
+            if job.startswith("focus_"):
+                slot = f"{job[6:8]}:{job[8:]}"
+                # Cùng mốc với hỏi cập nhật việc (12:45): gộp một tin (báo tập trung + danh sách việc + hỏi).
+                both = "tasks_" + job[6:] in jobs and mark_sent(self.db, self.day, "tasks_" + job[6:])
+                self.submit(job, self.bot.send_focus_report, self.day, slot, both)
+                continue
+            if job == "tasks_am" or job.startswith("tasks_"):
+                self.submit(job, self.bot.send_task_checkin, self.day, "am" if job == "tasks_am" else
+                            f"{job[6:8]}:{job[8:]}")
                 continue
             fn = {"morning": lambda: self.bot.send_morning(self.day),
                   "plan": lambda: self.bot.start_convo("plan"),

@@ -20,6 +20,10 @@ def make_cfg(tmp, **over):
     cfg.update({"data_dir": os.path.join(tmp, "data"), "report_dir": os.path.join(tmp, "reports"),
                 "timesheet_data_dir": os.path.join(tmp, "timesheet")})
     cfg["auto_start_at"] = "07:00"  # test viết theo khung chạy từ 07:00, không phụ thuộc mặc định của app
+    # Test cũ viết theo 3 mốc tiến độ và câu hỏi "3 việc" đầu ngày; test danh sách việc / báo tập trung (v2.14.0)
+    # tự bật lại (task_checkin_enabled / focus_report_enabled) và tự đặt mốc.
+    cfg.update({"pace_checkpoints": ["10:30", "14:00", "15:30"], "task_checkin_enabled": False,
+                "focus_report_enabled": False})
     cfg.update(over)
     validate(cfg)
     cfg.setdefault("persona", dict(persona.DEFAULT))

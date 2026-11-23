@@ -550,8 +550,8 @@ def day_facts(db, cfg, day):
             facts[k] = note[k]
     if note.get("energy") and note.get("energy_source") == "auto":
         facts["energy_source"] = "app_uoc_tinh"
-    from . import pending  # import trễ: pending -> intent -> actions
-    carry = pending.pending_after(db, cfg, day, off_day)
+    from . import pending, tasks  # import trễ: pending/tasks -> intent -> actions
+    carry = tasks.carry_after(db, cfg, day, off_day)
     if carry:
         facts["pending_carry"] = [pending.item_label(it) for it in carry[:pending.MAX_ITEMS]]
     if note.get("as400_start"):

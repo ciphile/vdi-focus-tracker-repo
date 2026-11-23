@@ -77,11 +77,14 @@ def offday_ot_due(cfg, hhmm, quiet_seconds):
     return hhmm >= cfg["work_end"] and quiet_seconds >= OFFDAY_OT_QUIET_MINUTES * 60
 
 
-def due_jobs(cfg, hhmm, weekday, *, active, off, note, has_bot, leave=None):
+def due_jobs(cfg, hhmm, weekday, *, active, off, note, has_bot, leave=None, morning_age=None):
     """Các việc theo giờ đã tới hạn. Mỗi việc chỉ chạy 1 lần/ngày (nơi gọi ghi sent_log).
 
     weekday: 0 = thứ Hai. note: ghi chú hôm nay. leave: "am" | "pm" | None (nghỉ phép nửa ngày).
-    Trả list tên việc: morning, plan, review, summary, weekly, boost, pace_HHMM (cảnh báo tiến độ, xem pace.py).
+    morning_age: số giây từ lúc gửi lời chào sáng hôm nay (None = chưa gửi).
+    Trả list tên việc: morning, plan (hỏi 3 việc, khi tắt danh sách việc), tasks_am (danh sách việc đầu ngày),
+    tasks_HHMM (hỏi cập nhật việc), focus_HHMM (báo giờ tập trung sâu), review, summary, weekly, boost,
+    pace_HHMM (cảnh báo tiến độ, xem pace.py).
     """
     if off or not has_bot:  # ngày nghỉ: không gì cả; mọi việc theo giờ đều đi qua bot Telegram
         return []
@@ -91,8 +94,16 @@ def due_jobs(cfg, hhmm, weekday, *, active, off, note, has_bot, leave=None):
     # Lời chào + khích lệ đầu ngày: lần đầu bạn dùng máy trong giờ làm, sau plan_prompt_after.
     if active and work and hhmm >= t["plan"] and cfg.get("encouragement_enabled", True):
         jobs.append("morning")
-    # Hỏi kế hoạch: lần đầu bạn dùng máy trong giờ làm, sau plan_prompt_after.
-    if active and work and hhmm >= t["plan"] and not note.get("plan"):
+    tasks_on = cfg.get("task_checkin_enabled", True)
+    if tasks_on:
+        # Danh sách việc đầu ngày: sau lời chào sáng task_checkin_after_morning_minutes phút (tắt lời chào thì gửi
+        # ngay lần đầu bạn dùng máy trong giờ làm).
+        wait = cfg.get("task_checkin_after_morning_minutes", 5) * 60
+        greeted = not cfg.get("encouragement_enabled", True) or (morning_age is not None and morning_age >= wait)
+        if active and work and hhmm >= t["plan"] and greeted:
+            jobs.append("tasks_am")
+    elif active and work and hhmm >= t["plan"] and not note.get("plan"):
+        # Tắt danh sách việc: hỏi 3 việc quan trọng như trước, lần đầu bạn dùng máy trong giờ làm.
         jobs.append("plan")
     # Hỏi tổng kết: lần đầu bạn dùng máy từ review_prompt_at tới hết giờ làm. Lỡ thì gõ /review. Đã tự gõ /review
     # xong trong ngày thì bot ghi sẵn sent_log "review" nên không hỏi lại. Không dựa vào ô năng lượng: /energy gõ
@@ -107,8 +118,18 @@ def due_jobs(cfg, hhmm, weekday, *, active, off, note, has_bot, leave=None):
     if (t["boost"] and cfg.get("encouragement_enabled", True) and active and work and hhmm >= t["boost"]):
         jobs.append("boost")
     # Cảnh báo tiến độ: mốc gần nhất đã qua (ngồi máy hay không), bỏ mốc trong phần nghỉ phép / trễ quá lâu.
-    from .pace import due_checkpoint, job_name
+    from .pace import due_checkpoint, due_slot, job_name
     cp = due_checkpoint(cfg, hhmm, off, leave)
     if cp:
         jobs.append(job_name(cp))
+    # Báo giờ tập trung sâu / hỏi cập nhật việc: mốc gần nhất đã qua (ngồi máy hay không: tin tới điện thoại).
+    # focus_ đứng trước tasks_: cùng mốc thì tracker gộp làm một tin.
+    if cfg.get("focus_report_enabled", True):
+        slot = due_slot(cfg, cfg.get("focus_reports") or [], hhmm, off, leave)
+        if slot:
+            jobs.append("focus_" + slot.replace(":", ""))
+    if tasks_on:
+        slot = due_slot(cfg, cfg.get("task_checkins") or [], hhmm, off, leave)
+        if slot:
+            jobs.append("tasks_" + slot.replace(":", ""))
     return jobs

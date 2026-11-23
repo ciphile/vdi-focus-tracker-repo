@@ -7,6 +7,8 @@
 - tg_name:           tên Telegram của bạn (AI gọi tên này nếu persona.json chưa có "ten")
 - nudge_level:       /nudge off|nhe|vua|nghiem   mức nhắc khi sao nhãng
 - pace_check_enabled: /pace on|off      cảnh báo tiến độ ở các mốc trong ngày
+- task_checkin_enabled: /viec on|off   gửi danh sách việc và hỏi cập nhật (đầu ngày, task_checkins)
+- focus_report_enabled: /baosau on|off  báo giờ tập trung sâu + AI nhận xét ở các mốc focus_reports
 - energy_auto_enabled: /autoenergy on|off   bot tự tính năng lượng lúc tổng kết khi bạn chưa chấm
 - break_enabled, break_minutes: /break on|off|45   nhắc đứng dậy, vận động, tập mắt khi ngồi lâu
 - water_enabled, water_minutes: /water on|off|45   nhắc uống nước
@@ -18,7 +20,7 @@
   settings.json. run247_prev: giờ bật/tắt + run_on_off_days TRƯỚC khi bật 24/24 (để /chay247 off trả lại đúng như cũ).
 
 Muốn quay về giá trị trong file cấu hình: /style mac_dinh, /aireview mac_dinh, /nudge mac_dinh, /pace mac_dinh,
-/break mac_dinh, /water mac_dinh, /giobot mac_dinh, /autoenergy mac_dinh, /vdi mac_dinh.
+/break mac_dinh, /water mac_dinh, /viec mac_dinh, /baosau mac_dinh, /giobot mac_dinh, /autoenergy mac_dinh, /vdi mac_dinh.
 """
 import json
 
@@ -61,6 +63,11 @@ def apply(cfg, db):
     v = get_pref(db, "pace_check_enabled")
     if v in ("0", "1"):
         cfg["pace_check_enabled"] = v == "1"
+    for key in SWITCHES:
+        cfg.setdefault("_file_" + key, cfg.get(key, True))
+        v = get_pref(db, key)
+        if v in ("0", "1"):
+            cfg[key] = v == "1"
     cfg.setdefault("_file_energy_auto_enabled", cfg.get("energy_auto_enabled", True))
     v = get_pref(db, "energy_auto_enabled")
     if v in ("0", "1"):
@@ -189,6 +196,21 @@ def set_pace_check(cfg, db, state):
         return
     set_pref(db, "pace_check_enabled", "1" if state == "on" else "0")
     cfg["pace_check_enabled"] = state == "on"
+
+
+SWITCHES = ("task_checkin_enabled", "focus_report_enabled")  # bật/tắt đơn giản: /viec on|off, /baosau on|off
+
+
+def set_switch(cfg, db, key, state):
+    """key trong SWITCHES; state: on | off | default (về giá trị trong settings.json)."""
+    if key not in SWITCHES:
+        raise ValueError(key)
+    if state == "default":
+        set_pref(db, key, None)
+        cfg[key] = bool(cfg.get("_file_" + key, True))
+        return
+    set_pref(db, key, "1" if state == "on" else "0")
+    cfg[key] = state == "on"
 
 
 def set_energy_auto(cfg, db, state):

@@ -55,7 +55,16 @@ def due_checkpoint(cfg, hhmm, off=None, leave=None):
     """Mốc kiểm tra tới hạn lúc hhmm (mốc gần nhất đã qua, trễ không quá LATE_MINUTES), hoặc None."""
     if off or not cfg.get("pace_check_enabled", True) or not is_work_time(cfg, hhmm, off, leave):
         return None
-    passed = [cp for cp in cfg["pace_checkpoints"] if cp <= hhmm and not in_leave(cfg, cp, leave)]
+    return due_slot(cfg, cfg["pace_checkpoints"], hhmm, off, leave)
+
+
+def due_slot(cfg, slots, hhmm, off=None, leave=None):
+    """Mốc gần nhất đã qua trong slots (trễ không quá LATE_MINUTES, không tính phút nghỉ trưa ở giữa), bỏ mốc
+    rơi vào phần nghỉ phép nửa ngày; ngày nghỉ hoặc lúc đang nghỉ phép -> None. Dùng chung cho cảnh báo tiến độ,
+    hỏi cập nhật việc (tasks) và báo giờ tập trung sâu."""
+    if off or in_leave(cfg, hhmm, leave):
+        return None
+    passed = [cp for cp in slots if cp <= hhmm and not in_leave(cfg, cp, leave)]
     if not passed or _min(hhmm) - _min(passed[-1]) > LATE_MINUTES + _lunch_inside(cfg, passed[-1], hhmm):
         return None
     return passed[-1]

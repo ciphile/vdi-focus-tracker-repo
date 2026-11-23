@@ -25,11 +25,22 @@
   "pace_check_enabled": true,
   "pace_target_vdi_hours": 6,
   "pace_checkpoints": [
-    "10:30",
-    "14:00",
     "15:30"
   ],
   "pace_behind_ratio": 0.4,
+  "task_checkin_enabled": true,
+  "task_checkin_after_morning_minutes": 5,
+  "task_checkins": [
+    "12:45",
+    "16:00"
+  ],
+  "task_reply_minutes": 5,
+  "focus_report_enabled": true,
+  "focus_reports": [
+    "10:17",
+    "12:45",
+    "15:00"
+  ],
   "energy_auto_enabled": true,
   "energy_capacity_hours": 4,
   "plan_prompt_after": "08:00",

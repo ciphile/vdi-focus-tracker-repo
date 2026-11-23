@@ -9,6 +9,7 @@ Bảng:
 - quotes       câu khích lệ đã gửi (để không lặp)
 - ai_cache     nhận xét AI đã viết (hỏi lại không tốn quota)
 - prefs        tuỳ chọn đổi qua Telegram (/aireview, /style), đè lên settings.json / persona.json
+- tasks        danh sách việc cần làm (/viec, focus/tasks.py), giữ mãi
 
 Mỗi thread dùng connection riêng. Vòng lấy mẫu ghi theo lô mỗi phút trong một giao dịch rất ngắn,
 nên bot Telegram ghi chú cùng lúc không bao giờ bị "database is locked".
@@ -32,6 +33,11 @@ CREATE TABLE IF NOT EXISTS ai_cache (key TEXT PRIMARY KEY, created REAL, text TE
 CREATE TABLE IF NOT EXISTS daily_stats (day TEXT PRIMARY KEY, data TEXT, updated REAL);
 CREATE TABLE IF NOT EXISTS sent_log (day TEXT, kind TEXT, ts REAL, PRIMARY KEY (day, kind));
 CREATE TABLE IF NOT EXISTS prefs (key TEXT PRIMARY KEY, value TEXT, updated REAL);
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'task',
+    created_day TEXT NOT NULL, start_day TEXT NOT NULL, due TEXT, first INTEGER NOT NULL DEFAULT 0,
+    done_day TEXT, dropped_day TEXT, updated REAL);
+CREATE INDEX IF NOT EXISTS tasks_open ON tasks (done_day, dropped_day, start_day);
 """
 
 
@@ -78,6 +84,12 @@ class SampleWriter:
             self.db.executemany("INSERT OR REPLACE INTO samples (ts,dur,idle,locked,vdi_state,fg_proc,fg_title,"
                                 "vdi_full) VALUES (?,?,?,?,?,?,?,?)", self.buf)
         self.buf.clear()
+
+
+def sent_at(db, day, kind):
+    """Lúc (epoch) đã gửi (day, kind), hoặc None."""
+    row = db.execute("SELECT ts FROM sent_log WHERE day=? AND kind=?", (day, kind)).fetchone()
+    return row[0] if row else None
 
 
 def mark_sent(db, day, kind):

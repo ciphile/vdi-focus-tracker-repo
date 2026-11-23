@@ -21,7 +21,8 @@ import urllib.error
 import urllib.request
 import uuid
 
-from . import absence, ai_client, energy, errors, holidays, intent, motivation, net, pace, pending, persona, prefs
+from . import (absence, ai_client, energy, errors, holidays, intent, motivation, net, pace, pending, persona, prefs,
+               progress, tasks)
 from .actions import (BY_COMMAND, BY_NAME, NUDGE_NAMES, bot_commands, confirm_card, describe, example, help_text, hours_line,
                       ask_toggle, parse_command_args, parse_times, understood_line, validate)
 from . import __version__
@@ -60,6 +61,7 @@ CONFIRM_KEYBOARD = lambda pid: {"inline_keyboard": [[
 
 
 RETRY_REVIEW_SECONDS = 15 * 60
+TASK_LIST_GAP_SECONDS = 60 * 60  # vừa gửi danh sách việc (đầu ngày đến muộn) thì mốc hỏi cập nhật kế tiếp bỏ qua
 
 ALERT_NAMES = {"out_of_vdi": "ngoài VDI", "away": "rời máy", "back": "quay lại", "break": "nghỉ giải lao",
                "phone": "điện thoại", "not_fullscreen": "VDI không toàn màn hình",
@@ -168,6 +170,7 @@ class TelegramBot:
         self.stopped = threading.Event()
         self._job_errors = {}
         self._retry_running = 0  # lúc bắt đầu lượt gửi lại đang chạy (0 = không có)
+        self._last_task_list = 0  # lúc bot tự gửi danh sách việc gần nhất (đầu ngày / mốc hỏi cập nhật)
         prefs.apply(cfg, self.db)  # /aireview, /style đã đổi trước đó
 
     # ------------------------------------------------------------ gửi
@@ -461,10 +464,16 @@ class TelegramBot:
                                      + (", đạt mục tiêu" if good else "")
                                      + (f", có làm thêm ngoài giờ {fmt_dur(a['ot'])} trong VDI" if a.get("ot") else ""))
                 break
-        prev_day, items = pending.previous_pending(self.db, self.cfg, day, off_day)
-        if items:
-            info["pending_from_previous_workday"] = {
-                "date": prev_day, "items": [pending.item_label(it) for it in items[:pending.MAX_ITEMS]]}
+        if tasks.since(self.db):  # danh sách việc: việc còn mở (chưa đánh dấu xong)
+            rows = tasks.open_tasks(self.db, day)
+            if rows:
+                info["open_tasks"] = [pending.item_label(tasks.item(t), with_since=t["created_day"] < day)
+                                      for t in rows[:pending.MAX_ITEMS]]
+        else:
+            prev_day, items = pending.previous_pending(self.db, self.cfg, day, off_day)
+            if items:
+                info["pending_from_previous_workday"] = {
+                    "date": prev_day, "items": [pending.item_label(it) for it in items[:pending.MAX_ITEMS]]}
         s = streak(self.db, self.cfg, day)
         if s:
             info["streak_days"] = s
@@ -547,9 +556,10 @@ class TelegramBot:
         ot_line = self.overtime_line(day)
         if ot_line:
             text += "\n\n" + ot_line
-        block = pending.pending_text(*pending.previous_pending(self.db, self.cfg, day, off_day))
-        if block:  # danh sách cố định do app ghép (AI có thể quên hoặc chép sai)
-            text += "\n\n" + block
+        if not self.cfg.get("task_checkin_enabled", True):  # bật danh sách việc: vài phút sau bot gửi danh sách riêng
+            block = pending.pending_text(*pending.previous_pending(self.db, self.cfg, day, off_day))
+            if block:  # danh sách cố định do app ghép (AI có thể quên hoặc chép sai)
+                text += "\n\n" + block
         self.send(text, raw=True)
         audit("MORNING_SENT", day)
 
@@ -644,6 +654,153 @@ class TelegramBot:
         mood = "buổi chiều, đang chậm so với mục tiêu, dễ tuột mood" if behind else "buổi chiều, đang giữ nhịp tốt"
         self.send(self.encourage(f"{mood}; {self.stats_line()}"), raw=True)
 
+    # ------------------------------------------------------------ danh sách việc (/viec) và báo tập trung sâu
+
+    def tasks_ready(self, day=None):
+        """Ngày đang ghi; lần đầu dùng thì chép việc tồn cũ sang danh sách việc (tasks.ensure_started)."""
+        day = day or self.today()
+        n = tasks.ensure_started(self.db, self.cfg, day, off_day)
+        if n:
+            log.info("Danh sách việc: chép %d việc tồn / kế hoạch cũ sang", n)
+            audit("TASKS_STARTED", n)
+        return day
+
+    def _task_ask(self, day, title):
+        mins = self.cfg.get("task_reply_minutes", 5)
+        return tasks.list_text(self.db, day, title) + f"\n\nCó cập nhật gì không? (mình chờ {mins} phút)"
+
+    def _start_task_convo(self):
+        with self._lock:
+            self.convo = ("tasks", [], time.time(), self.cfg.get("task_reply_minutes", 5) * 60)
+            self.awaiting_edit = False
+        self._last_task_list = time.time()
+
+    def _task_convo_on(self):
+        with self._lock:
+            return bool(self.convo) and self.convo[0] == "tasks" and self.convo_active()
+
+    def end_task_convo(self):
+        with self._lock:
+            if self.convo and self.convo[0] == "tasks":
+                self.convo = None
+
+    def send_task_checkin(self, day, slot):
+        """Gửi danh sách việc và hỏi có cập nhật không (slot "am" = đầu ngày, hoặc "12:45"...), chờ task_reply_minutes."""
+        if slot != "am" and time.time() - self._last_task_list < TASK_LIST_GAP_SECONDS:
+            log.info("Bỏ hỏi cập nhật việc lúc %s: vừa gửi danh sách việc chưa tới 1 giờ", slot)
+            return
+        with self._lock:
+            busy = self.convo and self.convo[0] != "tasks" and self.convo_active()
+        if busy:  # đang hỏi tổng kết / kế hoạch dở: không chen ngang, chỉ gửi danh sách để xem
+            self.send(tasks.list_text(self.db, self.tasks_ready(day), f"📋 Việc cần làm lúc {slot}"))
+            return
+        title = "📋 Việc cần làm hôm nay" if slot == "am" else f"📋 Cập nhật việc lúc {slot}"
+        self.send(self._task_ask(self.tasks_ready(day), title))
+        self._start_task_convo()
+        audit("TASKS_CHECKIN", slot)
+
+    def send_focus_report(self, day, slot, with_tasks=False):
+        """Báo giờ tập trung sâu tới lúc này + AI nhận xét. with_tasks: kèm danh sách việc và hỏi cập nhật (cùng mốc)."""
+        at = dt.datetime.now().strftime("%H:%M")
+        if day != self.today() or at < slot:
+            at = slot
+        p = self.cfg.get("persona") or persona.DEFAULT
+        text = progress.report(self.cfg, self.db, day, at, p)  # câu AI giữ nguyên xưng hô AI đã viết
+        if with_tasks and time.time() - self._last_task_list < TASK_LIST_GAP_SECONDS:
+            log.info("Báo tập trung %s: không kèm danh sách việc, vừa gửi chưa tới 1 giờ", slot)
+            with_tasks = False
+        if with_tasks:
+            with self._lock:
+                busy = self.convo and self.convo[0] != "tasks" and self.convo_active()
+            if busy:
+                text += "\n\n" + self.persona_text(tasks.list_text(self.db, self.tasks_ready(day), howto=False))
+            else:
+                text += "\n\n" + self.persona_text(self._task_ask(self.tasks_ready(day), f"📋 Cập nhật việc lúc {slot}"))
+        self.send(text, raw=True)
+        if with_tasks and not busy:
+            self._start_task_convo()
+        audit("FOCUS_REPORT", slot)
+
+    def apply_tasks(self, ops):
+        """Thực hiện lệnh danh sách việc, báo kết quả + danh sách mới."""
+        day = self.tasks_ready()
+        try:
+            out = tasks.apply(self.db, self.cfg, day, ops, off_day)
+        except tasks.TaskError as e:
+            self.send(str(e))
+            return False
+        audit("TASKS_UPDATE", tasks.describe(ops))
+        self.send("\n".join(persona.keep(line) for line in out) + "\n\n"
+                  + tasks.list_text(self.db, day, howto=False))
+        return True
+
+    def _task_ops_answer(self, value):
+        """Câu trả lời trong lúc hỏi tổng kết là cú pháp danh sách việc: cập nhật danh sách. True nếu đã xử lý."""
+        try:
+            ops = tasks.parse(value, self.today())
+        except tasks.TaskError as e:
+            self.send(str(e))
+            return False
+        if not ops or ops == [("undo",)]:
+            return False
+        self.apply_tasks(ops)
+        return True
+
+    def handle_task_text(self, text):
+        """Tin nhắn thường là cú pháp danh sách việc, hoặc trả lời khi bot đang hỏi cập nhật việc. True nếu đã xử lý.
+        Đang hỏi tổng kết / kế hoạch dở thì không bắt (câu trả lời vào đúng câu hỏi đó)."""
+        in_tasks = self._task_convo_on()
+        if not in_tasks and self.convo_active():
+            return False
+        try:
+            ops = tasks.parse(text, self.today())
+        except tasks.TaskError as e:
+            self.send(str(e))
+            return True
+        if ops:
+            self.end_task_convo()
+            if self.apply_tasks(ops) and in_tasks:  # đang hỏi cập nhật: chờ thêm task_reply_minutes cho lệnh kế
+                with self._lock:
+                    self.convo = ("tasks", [], time.time(), self.cfg.get("task_reply_minutes", 5) * 60)
+            return True
+        if in_tasks:
+            self.end_task_convo()  # trả lời khác cú pháp: thôi chờ, tin được hiểu như mọi tin nhắn khác
+            if tasks.is_noop(text):
+                self.send("OK, giữ nguyên danh sách việc.")
+                return True
+        return False
+
+    def task_note_hook(self, field, value):
+        """/plan, /issue, /tmrtask và câu trả lời kế hoạch / tổng kết cũng vào danh sách việc. Trả câu báo thêm."""
+        if not value or value.strip().lower() in SKIP_WORDS:
+            return ""
+        try:
+            day = self.tasks_ready()
+            if field == "plan":  # lần đầu dùng: ensure_started có thể đã chép sẵn kế hoạch vừa lưu (add trả None)
+                lines = tasks.lines_of(value)
+                for line in lines:
+                    tasks.add(self.db, day, line)
+                return f"Đã thêm {len(lines)} việc vào danh sách (/viec)." if lines else ""
+            if field == "issues":
+                lines = tasks.lines_of(value)
+                for line in lines:
+                    tasks.add(self.db, day, line, "issue")
+                return "Đã thêm vào danh sách việc (/viec) dạng issue, xong thì gõ «xong <số>»." if lines else ""
+            if field == "tomorrow":
+                nxt = tasks.next_workday(self.db, self.cfg, day, off_day)
+                tasks.add(self.db, day, value, start_day=nxt, first=True)
+                return f"Đã đưa lên đầu danh sách việc ngày {nxt[8:]}/{nxt[5:7]}."
+            if field == "output":
+                hit = tasks.match_hint(self.db, day, value)
+                if hit:
+                    return (f"Việc số {hit[0]} trong danh sách «{persona.keep(hit[1]['text'])}» giống việc vừa ghi. "
+                            f"Đúng là xong rồi thì gõ «xong {hit[0]}».")
+        except tasks.TaskError as e:
+            return str(e)
+        except Exception as e:  # danh sách việc lỗi không được làm mất ghi chú vừa lưu
+            log.warning("Không cập nhật được danh sách việc (%s): %s", field, e, exc_info=True)
+        return ""
+
     # ------------------------------------------------------------ hỏi từng câu (/plan, /review)
 
     def start_convo(self, kind, manual=False):
@@ -657,6 +814,8 @@ class TelegramBot:
         log.info("Bắt đầu hỏi %s (%s)", kind, "bạn gõ lệnh" if manual else "tự động theo lịch")
         if kind == "review":
             intro = summary_text(analyze(self.db, self.cfg, self.today()), {}) + "\n\n"
+            if self.cfg.get("task_checkin_enabled", True) or tasks.since(self.db):
+                intro += tasks.list_text(self.db, self.tasks_ready(), howto=False) + "\n\n"
         else:
             intro = ""
             prev = last_tomorrow(self.db, self.today(), with_day=True)
@@ -676,6 +835,8 @@ class TelegramBot:
         if field == "plan" and note.get("plan"):
             return (f"Kế hoạch đã lưu hôm nay:\n{persona.keep(note['plan'])}\n\n{text}\n"
                     "(trả lời để thay bằng kế hoạch mới, /cancel để giữ nguyên kế hoạch trên)")
+        if field == "output" and tasks.since(self.db) and tasks.open_tasks(self.db, self.today()):
+            text += " (việc trong danh sách thì gõ «xong 1 3»)"
         if field in ("output", "issues") and note.get(field):
             return f"Đã ghi trong ngày:\n{persona.keep(note[field])}\n\n{text} (phần thêm, nếu có)"
         if field == "as400" and note.get("as400_start"):
@@ -702,7 +863,9 @@ class TelegramBot:
             kind, questions = self.convo[:2]
             field, _ = questions[0]
         value = text.strip()
-        if value.lower() not in SKIP_WORDS:
+        if field in ("output", "plan") and self._task_ops_answer(value):
+            pass  # trả lời bằng cú pháp danh sách việc ("xong 1 3"): đã cập nhật danh sách, sang câu sau
+        elif value.lower() not in SKIP_WORDS:
             if field == "as400":
                 times = parse_times(value)
                 if not times:
@@ -718,8 +881,14 @@ class TelegramBot:
                 save_note(self.db, self.today(), {"energy": int(m.group(1))})
             elif field in ("output", "issues"):  # giữ các dòng đã ghi nhanh trong ngày
                 append_note(self.db, self.today(), field, value)
+                extra = self.task_note_hook(field, value)
+                if extra:
+                    self.send(extra)
             else:
                 save_note(self.db, self.today(), {field: value})
+                extra = self.task_note_hook(field, value)
+                if extra:
+                    self.send(extra)
         with self._lock:
             if self.convo and self.convo[1]:
                 self.convo[1].pop(0)
@@ -974,6 +1143,8 @@ class TelegramBot:
             editing = False
         if editing:  # vừa bấm "Sửa lại": tin này là bản sửa, kể cả khi đang hỏi dở
             self.handle_text(text)
+        elif self.handle_task_text(text):
+            pass  # cú pháp danh sách việc ("xong 1 3", "mới: ...") hoặc trả lời "không" khi bot hỏi cập nhật việc
         elif self.convo_active() and not (self.convo_is_auto() and intent.looks_like_question(text)):
             # đang hỏi kế hoạch / tổng kết: câu trả lời vào đúng chỗ kể cả khi bật /ask; chỉ câu HỎI mới gửi AI
             self.continue_convo(text)

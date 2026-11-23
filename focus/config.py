@@ -105,8 +105,19 @@ DEFAULTS = {
     # x mức cần lúc đó thì nhắc ngay; đúng nhịp ở mốc 14:00 thì khen 1 câu. Bật/tắt: /pace on|off.
     "pace_check_enabled": True,
     "pace_target_vdi_hours": 6,
-    "pace_checkpoints": ["10:30", "14:00", "15:30"],
+    "pace_checkpoints": ["15:30"],
     "pace_behind_ratio": 0.4,
+    # Danh sách việc (/viec): sau lời chào sáng task_checkin_after_morning_minutes phút bot gửi danh sách việc hôm
+    # nay và hỏi có cập nhật không; hỏi lại ở các mốc task_checkins. Chờ trả lời task_reply_minutes phút rồi thôi
+    # chờ (vẫn cập nhật được bất cứ lúc nào: /viec). Chỉ ngày làm việc. Bật/tắt nhanh: /viec on | /viec off.
+    "task_checkin_enabled": True,
+    "task_checkin_after_morning_minutes": 5,
+    "task_checkins": ["12:45", "16:00"],
+    "task_reply_minutes": 5,
+    # Báo giờ tập trung sâu tới lúc này + AI nhận xét ngắn ở các mốc focus_reports (chỉ ngày làm việc).
+    # Trùng mốc hỏi việc (12:45) thì gộp làm một tin. Bật/tắt nhanh: /baosau on | /baosau off.
+    "focus_report_enabled": True,
+    "focus_reports": ["10:17", "12:45", "15:00"],
     # Tới giờ tổng kết (daily_summary_at) mà chưa chấm năng lượng (/energy, câu cuối tổng kết 16:45): bot tự tính
     # từ số liệu tập trung (focus/energy.py) và báo bạn. energy_capacity_hours: số giờ tập trung sâu một ngày thì
     # coi là cạn sức. Bật/tắt nhanh: /autoenergy on|off.
@@ -281,6 +292,22 @@ def read_secrets(path):
     return out
 
 
+def _time_list(cfg, key, sample):
+    """Danh sách mốc giờ trong giờ làm, không rơi vào nghỉ trưa; tự xếp theo giờ, bỏ trùng."""
+    cps = cfg[key]
+    if not isinstance(cps, list):
+        raise ConfigError(f'"{key}" phải là danh sách giờ, ví dụ {sample}.')
+    norm = []
+    for cp in cps:
+        cp = _hhmm(cp, key)
+        if not cfg["work_start"] < cp < cfg["work_end"]:
+            raise ConfigError(f'"{key}": {cp} phải nằm trong giờ làm ({cfg["work_start"]}–{cfg["work_end"]}).')
+        if cfg["lunch_start"] <= cp < cfg["lunch_end"]:
+            raise ConfigError(f'"{key}": {cp} rơi vào nghỉ trưa ({cfg["lunch_start"]}–{cfg["lunch_end"]}).')
+        norm.append(cp)
+    return sorted(set(norm))
+
+
 def validate(cfg):
     """Chuẩn hoá và kiểm tra. Raise ConfigError với lời nhắn dễ hiểu."""
     for key in TIME_KEYS:
@@ -332,18 +359,13 @@ def validate(cfg):
     r = cfg["pace_behind_ratio"]
     if not isinstance(r, (int, float)) or isinstance(r, bool) or not 0 < r < 1:
         raise ConfigError(f'"pace_behind_ratio" phải là số giữa 0 và 1 (ví dụ 0.4), đang là {r!r}.')
-    cps = cfg["pace_checkpoints"]
-    if not isinstance(cps, list):
-        raise ConfigError('"pace_checkpoints" phải là danh sách giờ, ví dụ ["10:30", "14:00", "15:30"].')
-    norm = []
-    for cp in cps:
-        cp = _hhmm(cp, "pace_checkpoints")
-        if not cfg["work_start"] < cp < cfg["work_end"]:
-            raise ConfigError(f'"pace_checkpoints": {cp} phải nằm trong giờ làm ({cfg["work_start"]}–{cfg["work_end"]}).')
-        if cfg["lunch_start"] <= cp < cfg["lunch_end"]:
-            raise ConfigError(f'"pace_checkpoints": {cp} rơi vào nghỉ trưa ({cfg["lunch_start"]}–{cfg["lunch_end"]}).')
-        norm.append(cp)
-    cfg["pace_checkpoints"] = sorted(set(norm))  # tự xếp theo giờ, bỏ trùng
+    for key, sample in (("pace_checkpoints", '["15:30"]'), ("task_checkins", '["12:45", "16:00"]'),
+                        ("focus_reports", '["10:17", "12:45", "15:00"]')):
+        cfg[key] = _time_list(cfg, key, sample)
+    for key in ("task_checkin_after_morning_minutes", "task_reply_minutes"):
+        v = cfg[key]
+        if not isinstance(v, int) or isinstance(v, bool) or not 1 <= v <= 120:
+            raise ConfigError(f'"{key}" phải là số phút nguyên từ 1 đến 120, đang là {v!r}.')
     cfg["weekly_report_day"] = str(cfg["weekly_report_day"]).lower()[:3]
     if cfg["weekly_report_day"] not in WEEKDAYS:
         raise ConfigError(f'"weekly_report_day" phải là một trong {WEEKDAYS}.')
@@ -359,7 +381,7 @@ def validate(cfg):
     cfg["browser_processes"] = [p.lower().strip() for p in cfg["browser_processes"] if p.strip()]
     cfg["encouragement_styles"] = [s for s in cfg["encouragement_styles"] if s in STYLES] or list(STYLES)
     for key in ("as400_enabled", "as400_photo_ai", "ai_review_enabled", "encouragement_enabled", "run_on_off_days", "store_window_titles", "holiday_fetch_enabled",
-                "pace_check_enabled", "break_reminder_enabled", "water_reminder_enabled", "vdi_closed_alert",
+                "pace_check_enabled", "task_checkin_enabled", "focus_report_enabled", "break_reminder_enabled", "water_reminder_enabled", "vdi_closed_alert",
                 "energy_auto_enabled"):
         if not isinstance(cfg[key], bool):
             raise ConfigError(f'"{key}" phải là true hoặc false, đang là {cfg[key]!r}.')

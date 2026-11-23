@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.13.0 (`focus/__init__.py`) |
+| Phiên bản | 2.14.0 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -453,9 +453,11 @@ Không có `settings.json` thì app dùng mặc định dưới đây. Việc n�
 | Nghỉ trưa (không nhắc, không tính) | 11:15 – 12:30 | — | `lunch_start`, `lunch_end` |
 | Tracker tự bật / tự tắt, thứ 2 – thứ 6 | 08:00 / 23:59 | `/giobot 08:30 18:00` | `auto_start_at`, `auto_stop_at` |
 | Mục tiêu tập trung sâu mỗi ngày | 4 giờ | — | `daily_focus_goal_hours` |
-| Mục tiêu giờ làm trong VDI (cảnh báo tiến độ 10:30, 14:00, 15:30) | 6 giờ | `/pace on`, `/pace off` (bật, tắt) | `pace_target_vdi_hours` |
+| Mục tiêu giờ làm trong VDI (cảnh báo tiến độ 15:30) | 6 giờ | `/pace on`, `/pace off` (bật, tắt) | `pace_target_vdi_hours` |
 | Công việc của bạn, gửi kèm **mọi** lần gọi AI | Lập trình viên/BA Life Asia trên IBM i (AS400), COBOL, CL, DB2 for i, làm qua VDI Citrix | — | `work_context` |
 | Lời khích lệ đầu ngày, buổi chiều (xem khung ngay dưới bảng này) | Châm ngôn danh nhân, hiền triết + vì gia đình (**Kinh Thánh tắt**) | `/kinhthanh` (đổi qua lại Kinh Thánh / danh ngôn), `/encourage quote`, `/encourage off` | `encouragement_styles`, `encouragement_enabled` |
+| Danh sách việc: gửi đầu ngày (5 phút sau lời chào), hỏi cập nhật 12:45 và 16:00, chờ trả lời 5 phút (mục 4.24) | Bật | `/viec on`, `/viec off` | `task_checkin_enabled`, `task_checkins`, `task_reply_minutes` |
+| Báo giờ tập trung sâu + AI nhận xét (mục 4.25) | Bật, 10:17 · 12:45 · 15:00 | `/baosau on`, `/baosau off` | `focus_report_enabled`, `focus_reports` |
 | Mức nhắc khi sao nhãng (**bước 11**) | Vừa | `/nudge nhe`, `/nudge nghiem`, `/nudge off` | `nudge_level` |
 | App mở VDI mà bot đo (mục 4.2) | Cả hai: Citrix và Windows App | `/vdi citrix`, `/vdi winapp`, `/vdi ca_hai` | `vdi_client` |
 | Nhắc rời máy | Sau 15 phút | — | `away_alert_minutes` |
@@ -723,15 +725,18 @@ Với cấu hình mặc định (giờ làm 08:00–17:00, trưa 11:15–12:30, 
 08:00  ── tracker tự bật (auto_start_at), lặng lẽ đo mỗi 5 giây
   │      lần đầu bạn dùng máy trong giờ làm (sau plan_prompt_after 08:00):
   │        ☀️  chào buổi sáng + câu khích lệ / Kinh Thánh (AI viết), nhắc việc hôm qua hẹn làm trước
-  │        📝 hỏi kế hoạch (nếu chưa có /plan), kèm giờ vàng
+  │        📋 5 phút sau: danh sách việc hôm nay (việc tồn + việc hẹn), hỏi có cập nhật không, chờ 5 phút
+  │           (/viec off: bot hỏi «3 việc quan trọng» như bản cũ)
   │      suốt giờ làm: nhắc sao nhãng (/nudge), rời máy, đứng dậy (/break), uống nước (/water),
   │        cất điện thoại, phóng to VDI
   │        VDI tự đóng (Citrix ngắt sau khoảng 10–15 phút không dùng): báo ngay
-10:30  ── mốc tiến độ 1 (/pace): chậm thì nhắc
+10:17  ── ⏱ báo giờ tập trung sâu tới lúc này + AI nhận xét (/baosau)
 11:15  ── nghỉ trưa: im lặng tới 12:30
-14:00  ── mốc tiến độ 2: chậm thì nhắc, đúng nhịp thì khen 1 câu
+12:45  ── ⏱ báo tập trung sâu + 📋 danh sách việc, hỏi cập nhật (một tin), chờ 5 phút
 14:30  ── câu khích lệ buổi chiều (nếu đang dùng máy)
-15:30  ── mốc tiến độ 3
+15:00  ── ⏱ báo tập trung sâu + AI nhận xét
+15:30  ── mốc tiến độ (/pace): chậm thì nhắc, đúng nhịp thì khen 1 câu
+16:00  ── 📋 danh sách việc, hỏi cập nhật lần cuối, chờ 5 phút
 16:45  ── hỏi tổng kết (output, issue, phân tâm, AS400, việc mai, năng lượng); không trả lời cũng được
 17:00  ── chưa chấm năng lượng thì bot tự tính và báo (🔋), rồi tổng kết ngày + AI đánh giá + lời chúc buổi tối
          + file báo cáo HTML
@@ -781,6 +786,8 @@ Mỗi tính năng: làm gì · bật/tắt · khoá cấu hình · tình huống
 | 4.21 | Gửi bù, tin nhắn cũ, báo lỗi | — | — | — |
 | 4.22 | Báo cáo HTML | `/report` | — | `report_refresh_minutes`, `keep_reports_days` |
 | 4.23 | Chạy 24/24, chế độ làm bù (OT), tắt app từ Telegram | `/chay247` `/lambu` `/tatapp` | `/chay247 off` `/lambu off` | `run_on_off_days`, `auto_start_at`, `auto_stop_at` |
+| 4.24 | **Danh sách việc** (gom `/plan` `/issue` `/tmrtask`), hỏi cập nhật đầu ngày, 12:45, 16:00 | `/viec` | `/viec off` | `task_checkin_enabled`, `task_checkins`, `task_reply_minutes`, `task_checkin_after_morning_minutes` |
+| 4.25 | Báo giờ tập trung sâu + AI nhận xét 10:17, 12:45, 15:00 | `/baosau` | `/baosau off` | `focus_report_enabled`, `focus_reports` |
 
 ### 4.1 Đo tập trung, điểm tập trung, điểm tổng, streak
 
@@ -1332,20 +1339,21 @@ chậm nếu       thực tế < (1 − pace_behind_ratio) × mức cần    (m�
 
 | Mốc (`pace_checkpoints`) | Giờ làm đã qua | Mức cần | Nhắc nếu dưới |
 |---|---|---|---|
-| 10:30 | 2,5h | 1h56 | 1h10 |
-| 14:00 | 4,75h | 3h41 | 2h12 |
-| 15:30 | 6,25h | 4h50 | 2h54 |
+| 15:30 (mặc định từ bản 2.14.0, mốc duy nhất) | 6,25h | 4h50 | 2h54 |
+| 10:30, 14:00 (bản cũ; muốn dùng lại thì ghi `"pace_checkpoints": ["10:30", "14:00", "15:30"]`) | 2,5h · 4,75h | 1h56 · 3h41 | 1h10 · 2h12 |
+
+Từ bản 2.14.0 các mốc 10:30 và 14:00 được thay bằng tin báo giờ tập trung sâu kèm AI nhận xét lúc 10:17, 12:45, 15:00 (mục 4.25).
 
 | Luật | |
 |---|---|
 | Mỗi mốc | Tối đa 1 lần/ngày, chạy cả khi bạn không ngồi máy |
 | Mở máy muộn | Chỉ chạy mốc gần nhất đã qua; trễ hơn 60 phút (cộng giờ trưa nếu vắt qua trưa) thì bỏ |
-| Đúng nhịp | Im lặng; riêng mốc đầu tiên từ 14:00 trở đi khen 1 câu (1 lần/ngày) |
+| Đúng nhịp | Im lặng; riêng mốc đầu tiên từ 14:00 trở đi (mặc định 15:30) khen 1 câu (1 lần/ngày) |
 | Nghỉ nửa ngày | Mục tiêu còn một nửa (3h), bỏ mốc trong buổi nghỉ |
 | Không kịp nữa | Bảo dồn sức cho việc quan trọng nhất |
 | Bật/tắt | `/pace on`, `/pace off` (`/tiendo`); settings: `pace_check_enabled`. Không phụ thuộc `/nudge` |
 
-Ví dụ 14:00 mới làm 2h, giọng `vui_tuoi`:
+Ví dụ mốc 14:00 (bản cũ có mốc này) mới làm 2h, giọng `vui_tuoi`:
 
 ```
 Tăng tốc chút nào bạn! Vẫn kịp về đúng giờ nếu bắt đầu ngay 💪
@@ -1362,7 +1370,7 @@ Kể cả ở VDI liền tay 3h00 còn lại cũng chỉ được khoảng 5h00:
 📈 Tiến độ lúc 09:44: làm thật trong VDI 0 phút / cần khoảng 1h21 lúc này (chậm 1h21 ⚠️).
 Mục tiêu 6h trong VDI trước 17:00 · còn 6h01 giờ làm.
 Để đạt 6h và về đúng 17:00 không OT: mỗi giờ còn lại cần 60 phút làm trong VDI.
-Cảnh báo tiến độ tự động: ĐANG BẬT (mốc 10:30, 14:00, 15:30).
+Cảnh báo tiến độ tự động: ĐANG BẬT (mốc 15:30).
 Đổi: /pace on hoặc /pace off
 ```
 
@@ -1425,7 +1433,7 @@ Nhắc uống nước trong giờ làm: ĐANG TẮT.
 
 | Lúc | Gì |
 |---|---|
-| Lần đầu dùng máy trong giờ làm sau `plan_prompt_after` | Chào + câu trích (danh ngôn / Kinh Thánh / vì gia đình) + nối với việc đầu tiên hôm nay (từ `/tmrtask` hôm trước) và điểm tốt của ngày làm việc trước. Có nghỉ phép nửa ngày, ngày lễ trong 7 ngày tới thì thêm dòng cố định. Ngày làm việc trước (hoặc cuối tuần, ngày lễ xen giữa) có làm ngoài giờ: thêm dòng 🌙 kèm khoảng giờ và dòng ⏱ tổng OT 14 ngày (mục 1). Ngày làm việc trước còn việc tồn: thêm khối 📌 (bên dưới) |
+| Lần đầu dùng máy trong giờ làm sau `plan_prompt_after` | Chào + câu trích (danh ngôn / Kinh Thánh / vì gia đình) + nối với việc đầu tiên hôm nay (từ `/tmrtask` hôm trước) và điểm tốt của ngày làm việc trước. Có nghỉ phép nửa ngày, ngày lễ trong 7 ngày tới thì thêm dòng cố định. Ngày làm việc trước (hoặc cuối tuần, ngày lễ xen giữa) có làm ngoài giờ: thêm dòng 🌙 kèm khoảng giờ và dòng ⏱ tổng OT 14 ngày (mục 1). Danh sách việc tắt (`/viec off`) mà ngày làm việc trước còn việc tồn: thêm khối 📌 (bên dưới). Danh sách việc bật (mặc định): danh sách đến riêng sau `task_checkin_after_morning_minutes` (5) phút (mục 4.24) |
 | `afternoon_boost_at` (14:30), nếu đang dùng máy | Một câu khích lệ hợp tình hình (đang chậm thì động viên, đang tốt thì giữ nhịp). `""` = tắt |
 | Sau nhắc sao nhãng | Xem mục 4.3 |
 | `/resume`, `/quote`, `/bible`, nhắn tâm sự («mệt quá») | Một câu khích lệ theo tình huống |
@@ -1492,7 +1500,7 @@ Theo dõi lại rồi. "Có công mài sắt, có ngày nên kim." — Tục ng�
 
 | | Kế hoạch | Tổng kết cuối ngày |
 |---|---|---|
-| Tự hỏi | Lần đầu dùng máy trong giờ làm sau `plan_prompt_after`, nếu chưa có kế hoạch | Lần đầu dùng máy từ `review_prompt_at` (16:45) tới hết giờ làm, nếu hôm nay bạn chưa tự gõ `/review` tới câu cuối. Gõ `/energy` giữa ngày không làm mất câu hỏi này |
+| Tự hỏi | Chỉ khi tắt danh sách việc (`/viec off`): lần đầu dùng máy trong giờ làm sau `plan_prompt_after`, nếu chưa có kế hoạch. Danh sách việc bật (mặc định): bot gửi danh sách việc thay cho câu hỏi này (mục 4.24) | Lần đầu dùng máy từ `review_prompt_at` (16:45) tới hết giờ làm, nếu hôm nay bạn chưa tự gõ `/review` tới câu cuối. Gõ `/energy` giữa ngày không làm mất câu hỏi này |
 | Tự gõ | `/plan` (hỏi; đã có kế hoạch thì bot in kế hoạch đó trước, trả lời để thay, `/cancel` để giữ nguyên), hoặc `/plan nội dung` (ghi luôn, thay kế hoạch cũ) | `/review` |
 | Xem lại | `/today` (mục 4.1), ngày cũ `/today hôm qua` | `/today` |
 | Câu hỏi | «3 việc quan trọng nhất hôm nay là gì? Ghi rõ output cụ thể.» (kèm việc hôm qua hẹn làm trước, giờ vàng) | Lần lượt: việc đã xong · issue/blocker · điều làm mất tập trung · giờ vào/ra AS400 (bỏ nếu `as400_enabled: false`) · việc đầu tiên sáng mai · năng lượng 1–5 |
@@ -1742,7 +1750,7 @@ Ghi chú: kế hoạch ✗ · output 0 · issue 0 · việc sáng mai ✗
 Bot bật 08:00 – tắt 23:59 (thứ 2 – thứ 6) · /giobot
 Giờ làm 08:00–17:00, trưa 11:15–12:30 · rời máy 15' · nhắc nghỉ (/break): 60' · uống nước (/water): 60'
 Đo VDI mở bằng: cả hai (Citrix và Windows App) (/vdi)
-Nhắc sao nhãng: vừa (1 lần mỗi lần sao nhãng) (/nudge) · Cảnh báo tiến độ: bật, mốc 10:30, 14:00, 15:30, mục tiêu 6h VDI (/pace)
+Nhắc sao nhãng: vừa (1 lần mỗi lần sao nhãng) (/nudge) · Cảnh báo tiến độ: bật, mốc 15:30, mục tiêu 6h VDI (/pace)
 AI đánh giá ngày/tuần: bật (/aireview) · Khích lệ tự động: bật [bible] (/encourage)
 Giọng: than_mat (/style) · Hỏi AI: tắt (/ask) · Gọi bạn là “bạn”
 Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) · lễ tới: Deepavali 08/11
@@ -1751,7 +1759,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.13.0
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.14.0
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -1922,6 +1930,106 @@ Chạy 24/24 thật sự cần cả hai:
 | `/chay247 off` mà giờ cũ không còn hợp lệ (vd. vừa dời giờ tổng kết ra sau giờ tắt cũ) | Không đổi, báo lỗi, gợi ý đặt giờ bằng `/giobot` |
 | Không ghi được `settings.json` | Cài đặt mới vẫn có hiệu lực (lưu trong DB), bot báo lý do |
 
+### 4.24 Danh sách việc (`/viec`)
+
+Một danh sách việc **duy nhất**, đánh số, kiểu ứng dụng task: kế hoạch đầu ngày (`/plan`), issue (`/issue`), việc cho ngày mai (`/tmrtask`) và việc tồn hôm trước đều đổ vào đây. Việc chưa xong tự chuyển sang ngày làm việc kế tiếp.
+
+| Lúc nào | Bot làm |
+|---|---|
+| Đầu ngày: `task_checkin_after_morning_minutes` (5) phút sau lời chào buổi sáng | Gửi danh sách + cách cập nhật, hỏi «Có cập nhật gì không?» |
+| Các mốc `task_checkins` (mặc định 12:45, 16:00) | Gửi lại danh sách, hỏi lại. Mốc trùng giờ báo tập trung sâu (12:45) thì gộp **một** tin |
+| Bạn không trả lời trong `task_reply_minutes` (5) phút | Thôi chờ, không nhắc lại. Sau đó gõ cú pháp cập nhật (bảng dưới) vẫn được |
+| Bạn gửi cập nhật | Làm ngay, in lại danh sách, chờ thêm 5 phút (gửi tiếp được) |
+| Danh sách vừa gửi chưa tới 1 giờ (vd. đầu ngày bạn tới muộn, 12:00 mới chào) | Bỏ qua mốc kế tiếp, khỏi gửi lặp |
+| Cuối tuần, ngày lễ, nghỉ phép cả ngày, `/pause` | Không gửi. Nghỉ phép nửa ngày: mốc rơi vào buổi nghỉ thì bỏ |
+| Ngày làm việc có OT | Như bình thường. Ngày nghỉ đi làm bù: không gửi |
+| `/viec off` | Tắt gửi tự động; đầu ngày bot quay lại hỏi «3 việc quan trọng» như trước. `/viec` vẫn xem / sửa được |
+
+**Cách cập nhật** (gõ thẳng bất cứ lúc nào, không cần chờ bot hỏi, hoặc `/viec xong 1 3`; mỗi dòng một lệnh):
+
+| Gõ | Làm gì |
+|---|---|
+| `xong 1 3` · `xong 1-3, 5` · `xong: tên việc` | Đánh dấu xong (gõ tên gần đúng cũng được). Việc xong tự ghi vào output hôm nay kèm giờ |
+| `mới: việc A; việc B` · `thêm: ...` · `+ ...` | Thêm việc. Thêm `hạn 25/11` ở cuối để đặt hạn |
+| `issue: thiếu quyền thư viện X` | Thêm issue (cũng ghi vào issue hôm nay) |
+| `hoãn 2` · `mai 2` | Dời việc sang ngày làm việc kế tiếp |
+| `bỏ 4` · `xoá 4` · `huỷ 4` | Bỏ việc khỏi danh sách |
+| `sửa 2: chữ mới` | Đổi tên việc |
+| `ưu tiên 3` · `làm trước 3` | Đưa lên đầu (⭐) |
+| `hạn 2 25/11` | Đặt hạn; quá hạn hiện ⚠️ |
+| `hoàn tác` · `undo` | Trả lại lần cập nhật vừa rồi |
+| `không` · `ok` · `bỏ qua` | Không đổi gì |
+
+Số thứ tự luôn theo danh sách bot vừa in. Nhắn tự nhiên («danh sách việc hôm nay», «xong việc test batch») thì bot hỏi OK như mọi thao tác ghi dữ liệu.
+
+Ví dụ thật (AI tắt):
+
+```
+08:07 bot:  📋 Việc cần làm hôm nay (T2 23/11):
+            1. ⭐ Test batch ABC
+            2. Viết spec API thanh toán (tồn từ T6 20/11)
+            3. Fix job đối soát (tồn từ T6 20/11)
+            4. thiếu quyền thư viện PRDLIB (issue, tồn từ T6 20/11)
+
+            Cập nhật: xong 1 3 · mới: việc mới · hoãn 2 · bỏ 4 · sửa 2: chữ mới · ưu tiên 3 · hạn 2 25/11 · hoàn tác. Không cần đổi gì thì gõ «không».
+
+            Có cập nhật gì không? (mình chờ 5 phút)
+bạn:        xong 1
+            mới: Gửi estimation UAT cho SH hạn 25/11
+bot:        ✅ Xong: Test batch ABC
+            ➕ Thêm: Gửi estimation UAT cho SH
+            📋 Việc cần làm hôm nay (T2 23/11):
+            1. Viết spec API thanh toán (tồn từ T6 20/11)
+            2. Fix job đối soát (tồn từ T6 20/11)
+            3. thiếu quyền thư viện PRDLIB (issue, tồn từ T6 20/11)
+            4. Gửi estimation UAT cho SH (hạn T4 25/11)
+
+            Đã xong hôm nay (1):
+            ✓ Test batch ABC
+bạn:        hoãn 2
+bot:        ⏭ Hoãn sang T3 24/11: Fix job đối soát
+            ...
+bạn:        không
+bot:        OK, giữ nguyên danh sách việc.
+```
+
+| Lệnh cũ | Giờ ghi vào đâu |
+|---|---|
+| `/plan` (3 việc quan trọng) | Mỗi dòng thành một việc trong danh sách hôm nay |
+| `/issue` | Ghi vào issue hôm nay như cũ + thêm vào danh sách (nhãn «issue») |
+| `/tmrtask` | Thêm vào danh sách ngày làm việc kế tiếp, đánh ⭐ |
+| `/output` | Ghi output như cũ; trùng tên việc trong danh sách thì bot gợi ý «gõ xong N» |
+| Việc tồn hôm trước | Lần đầu dùng bản 2.14.0, bot chép việc tồn, kế hoạch / issue hôm nay và việc ngày mai cũ vào danh sách một lần |
+
+### 4.25 Báo giờ tập trung sâu (`/baosau`)
+
+Vào các mốc `focus_reports` (mặc định 10:17, 12:45, 15:00) bot báo giờ tập trung chuyên sâu tới lúc đó, kèm AI nhận xét 2–3 câu theo giọng `/style`. Chỉ là thông báo, không hỏi gì. Chỉ đọc số liệu app đã tính, không đổi cách tính tập trung hay điểm.
+
+```
+⏱ 12:45 · Tập trung chuyên sâu hôm nay: 1h 35m / mục tiêu 4h (40%)
+Nhịp cần lúc này: khoảng 1h 49m · làm trong VDI 3h 02m · 3 khối ≥ 20 phút, dài nhất 48m
+Việc: xong 1 hôm nay, còn 4 việc
+
+🤖 (AI nhận xét: đang kịp hay chậm, phần còn lại của ngày nên làm gì)
+```
+
+| Dòng | Cách tính |
+|---|---|
+| Tập trung chuyên sâu | Tổng các khối làm trong VDI liền ≥ 20 phút (như `/today`) |
+| Nhịp cần lúc này | Mục tiêu (4h) × phút làm đã qua / tổng phút làm trong ngày; trừ giờ trưa, trừ buổi nghỉ phép nửa ngày |
+| Việc | Chỉ hiện khi đã dùng danh sách việc (mục 4.24) |
+| 🤖 nhận xét | AI viết; AI tắt / lỗi thì dùng câu có sẵn luân phiên theo giọng (khen khi kịp, nhắc khi dưới 60% nhịp cần) |
+
+| Tình huống | Bot làm |
+|---|---|
+| Mốc 12:45 trùng mốc hỏi danh sách việc | Một tin: báo tập trung + danh sách + câu hỏi cập nhật |
+| Máy ngủ / tắt lúc tới mốc | Gửi bù khi thức dậy, trễ tối đa 60 phút (cộng giờ trưa nếu nằm giữa) |
+| Cuối tuần, lễ, nghỉ phép cả ngày, `/pause` | Không gửi. Ngày làm việc có OT: như thường |
+| `/baosau` | Báo ngay lúc này |
+| `/baosau off` · `/baosau on` | Tắt / bật báo tự động |
+
+Cảnh báo tiến độ cũ (`/pace`, mục 4.6) giờ chỉ còn mốc 15:30, vì 10:17 và 12:45 đã có tin báo này.
+
 ---
 
 ## 5. Danh sách lệnh
@@ -1959,6 +2067,7 @@ Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `
 | `/energy` | `ghi_nang_luong` | `energy` (1–5) | có | Tự chấm sức lực hôm nay 1–5 (thường trả lời lúc tổng kết cuối ngày). AI dùng để tìm quy luật năng lượng với số liệu tập trung. Không chấm thì 17:00 bot tự tính (/autoenergy). Xem lại: /today | `/energy 4` |
 | `/as400` | `ghi_gio_as400` | `times` (giờ vào [giờ ra]) | có | Giờ vào/ra AS400 (hoặc gửi ảnh spooled file, AI đọc giờ) | `/as400 08:10 17:35` · «AS400 vào 8h10 ra 17h35» |
 | `/review` | `tong_ket_ngay` | — | không | Bot hỏi từng câu: output, issue, giờ AS400, việc mai, năng lượng | `/review` |
+| `/viec` `/tasks` `/todo` | `danh_sach_viec` | `text` (cú pháp cập nhật hoặc on/off, tuỳ chọn) | có, khi cập nhật (không kèm gì = xem) | Danh sách việc cần làm đánh số (gom kế hoạch, issue, việc mai, việc tồn). Kèm cú pháp: xong / mới / hoãn / bỏ / sửa / ưu tiên / hạn / hoàn tác (mục 4.24); on/off bật tắt tự gửi đầu ngày, 12:45, 16:00 | `/viec` · `/viec xong 1 3` · `/viec mới: test batch ABC; gửi mail SH` · `/viec hoãn 2` · `/viec off` · «danh sách việc hôm nay» |
 
 **🌴 NGÀY NGHỈ, NGHỈ PHÉP, TẠM DỪNG**
 
@@ -1982,6 +2091,7 @@ Bảng dưới đây **sinh tự động từ `focus/actions.py`** (danh sách `
 | `/style` | `doi_giong` | `tone` (giọng, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Đổi giọng bot và AI: than_mat, vui_tuoi, hai_huoc, sep_kho_tinh | `/style hai_huoc` · `/style sep_kho_tinh` · `/style mac_dinh` |
 | `/nudge` `/nhac` | `doi_muc_nhac` | `level` (off/nhe/vua/nghiem, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Mức nhắc khi sao nhãng: off (tắt hẳn), nhe (1 lần/ngày), vua (1 lần mỗi lần sao nhãng, mặc định), nghiem (nhắc lặp + đếm số lần, gắt hơn). Không kèm mức: xem mức hiện tại | `/nudge` · `/nudge nghiem` · `/nhac nhe` · `/nudge off` · `/nudge mac_dinh` · «nhắc nghiêm khắc hơn» · «chỉ nhắc 1 lần mỗi ngày thôi» · «tắt nhắc nhở sao nhãng» |
 | `/pace` `/tiendo` | `canh_bao_tien_do` | `state` (on/off, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Tiến độ hôm nay: giờ làm thật trong VDI so với nhịp cần để đạt mục tiêu và về đúng giờ; on/off bật tắt cảnh báo tự động ở các mốc | `/pace` · `/pace off` · `/tiendo on` · «tiến độ hôm nay sao rồi» · «tắt cảnh báo tiến độ» |
+| `/baosau` `/focusreport` | `bao_tap_trung_sau` | `state` (on/off, tuỳ chọn) | có, khi đổi (không kèm gì = báo ngay) | Báo giờ tập trung chuyên sâu tới lúc này + AI nhận xét; on/off bật tắt báo tự động 10:17, 12:45, 15:00 | `/baosau` · `/baosau off` · «báo tập trung sâu» |
 | `/autoenergy` `/tunangluong` | `tu_tinh_nang_luong` | `state` (on/off, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Tới giờ tổng kết mà bạn chưa chấm năng lượng: bot tự tính từ số liệu (tập trung càng sâu, càng lâu thì càng cạn; sao nhãng thì còn dư) rồi báo kèm cách tính. Không kèm on/off: xem công thức và số tính được lúc này | `/autoenergy` · `/autoenergy off` · `/autoenergy on` · «bot tự tính năng lượng thế nào» |
 | `/break` `/nghingoi` | `nhac_nghi_ngoi` | `every` (on/off/số phút, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Nhắc đứng dậy đi lại, vươn vai, tập mắt 20-20-20 khi ngồi làm liên tục; bật/tắt hoặc đổi số phút. Không phụ thuộc /nudge | `/break` · `/break off` · `/break 45` · `/nghingoi on` · «tắt nhắc đứng dậy» · «nhắc nghỉ mỗi 45 phút» |
 | `/water` `/uongnuoc` | `nhac_uong_nuoc` | `every` (on/off/số phút, tuỳ chọn) | có, khi đổi (không kèm gì = xem) | Nhắc uống nước trong giờ làm (trưa, nghỉ phép, khoá máy thì không); bật/tắt hoặc đổi số phút | `/water` · `/water off` · `/water 45` · `/uongnuoc on` · «nhắc uống nước» · «tắt nhắc uống nước» |
@@ -3157,12 +3267,14 @@ Mọi thứ nằm trong thư mục app, trên máy bạn (`data_dir` = `data`, `
 | `quotes` | `ts`, `style`, `text` | Câu khích lệ đã gửi: chỉ lưu câu trích (nguyên văn), để không lặp trong 2 ngày |
 | `sent_log` | `day`, `kind`, `ts` | Việc đã làm hôm nay, để mỗi việc chỉ 1 lần/ngày kể cả khi tracker khởi động lại |
 | `prefs` | `key`, `value`, `updated` | Tuỳ chọn đổi qua Telegram (đè lên file cấu hình) |
+| `tasks` | `id`, `text`, `kind` (`task`/`issue`), `created_day`, `start_day` (hiện từ ngày này, `hoãn` dời đi), `due` (hạn), `first` (⭐), `done_day`, `dropped_day`, `updated` | Danh sách việc (mục 4.24). Giữ mãi |
 
 | `sent_log.kind` | Nghĩa |
 |---|---|
 | `morning`, `plan`, `review`, `summary`, `boost` | Chào sáng, hỏi kế hoạch, hỏi tổng kết, tổng kết ngày, khích lệ chiều |
 | `weekly` (khoá = mã tuần) | Tổng kết tuần |
 | `pace_HHMM`, `pace_praise` | Mốc tiến độ, lời khen tiến độ |
+| `tasks_am`, `tasks_HHMM`, `focus_HHMM` | Danh sách việc đầu ngày, mốc hỏi lại, mốc báo tập trung sâu |
 | `not_fullscreen`, `nudge_light` | Gợi ý phóng to, nhắc mức nhẹ (1 lần/ngày) |
 | `leave_notice`, `off_notice` | Đã báo nghỉ phép / ngày nghỉ |
 | `holiday_warn` (khoá `YYYY-12`) | Đã nhắc thiếu lịch lễ năm sau |
@@ -3178,12 +3290,14 @@ Mọi thứ nằm trong thư mục app, trên máy bạn (`data_dir` = `data`, `
 | `vdi_client` | `/vdi` |
 | `pace_check_enabled` | `/pace on/off` |
 | `energy_auto_enabled` | `/autoenergy on/off` |
+| `task_checkin_enabled`, `focus_report_enabled` | `/viec on/off`, `/baosau on/off` |
+| `tasks_since`, `tasks_undo` | Ngày bắt đầu dùng danh sách việc (đã chép việc tồn cũ), lần cập nhật gần nhất để `hoàn tác` |
 | `break_enabled`, `break_minutes`, `water_enabled`, `water_minutes` | `/break`, `/water` |
 | `auto_start_at`, `auto_stop_at`, `hours_orig` | `/giobot` (`hours_orig` = giờ trong settings.json trước lần đổi đầu, để `mac_dinh` trả lại), `/chay247` |
 | `run_on_off_days`, `run247_prev` | `/chay247` (`run247_prev` = giờ bật/tắt và `run_on_off_days` trước khi bật 24/24, để `/chay247 off` trả lại) |
 | `ai_review_retry` | Đánh giá AI đang chờ gửi lại |
 
-Đổi qua Telegram rồi muốn về giá trị trong file: `/style mac_dinh`, `/aireview mac_dinh`, `/encourage mac_dinh`, `/nudge mac_dinh`, `/pace mac_dinh`, `/break mac_dinh`, `/water mac_dinh`, `/giobot mac_dinh`, `/vdi mac_dinh`.
+Đổi qua Telegram rồi muốn về giá trị trong file: `/style mac_dinh`, `/aireview mac_dinh`, `/encourage mac_dinh`, `/nudge mac_dinh`, `/pace mac_dinh`, `/break mac_dinh`, `/water mac_dinh`, `/viec mac_dinh`, `/baosau mac_dinh`, `/giobot mac_dinh`, `/vdi mac_dinh`.
 
 ---
 
@@ -3310,8 +3424,14 @@ Không bắt buộc. Chỉ cần ghi dòng muốn đổi; dòng không có dùng
 | `water_reminder_enabled`, `water_reminder_minutes` | `false`, `60` | Nhắc uống nước, **mặc định tắt** khi cài lần đầu (0 phút cũng = tắt). Bật nhanh `/water on` |
 | `pace_check_enabled` | `true` | Cảnh báo tiến độ. Đổi nhanh `/pace` |
 | `pace_target_vdi_hours` | `6` | Mục tiêu giờ làm thật trong VDI (0 < h ≤ 24) |
-| `pace_checkpoints` | `["10:30", "14:00", "15:30"]` | Mốc kiểm tra (trong giờ làm, ngoài giờ trưa) |
+| `pace_checkpoints` | `["15:30"]` | Mốc kiểm tra (trong giờ làm, ngoài giờ trưa). Trước 2.14.0 là `["10:30", "14:00", "15:30"]` |
 | `pace_behind_ratio` | `0.4` | Chậm hơn mức cần quá tỉ lệ này thì nhắc (0 < r < 1) |
+| `task_checkin_enabled` | `true` | Tự gửi danh sách việc + hỏi cập nhật (mục 4.24). Đổi nhanh `/viec on/off` |
+| `task_checkin_after_morning_minutes` | `5` | Gửi danh sách đầu ngày N phút sau lời chào buổi sáng (1–120) |
+| `task_checkins` | `["12:45", "16:00"]` | Các mốc hỏi lại trong ngày (trong giờ làm, ngoài giờ trưa) |
+| `task_reply_minutes` | `5` | Chờ trả lời N phút rồi thôi (1–120) |
+| `focus_report_enabled` | `true` | Báo giờ tập trung sâu + AI nhận xét (mục 4.25). Đổi nhanh `/baosau on/off` |
+| `focus_reports` | `["10:17", "12:45", "15:00"]` | Các mốc báo (trong giờ làm, ngoài giờ trưa) |
 | `energy_auto_enabled` | `true` | Tới giờ tổng kết mà chưa chấm năng lượng thì bot tự tính và báo (mục 4.10). Đổi nhanh `/autoenergy` |
 | `energy_capacity_hours` | `4` | Số giờ tập trung sâu một ngày thì coi là cạn sức (1–12) |
 
@@ -3572,7 +3692,7 @@ Test gồm: nhận diện VDI (kể cả VDI thu nhỏ mà Windows vẫn báo l�
 | Kiểu xuống dòng | `.gitattributes` giữ `.bat`, `.ps1`, `.vbs` dạng CRLF và `.command`, `.sh` dạng LF trên mọi máy (test `LauncherFilesTest` kiểm tra) |
 | Quyền chạy trên Mac | Git trên Windows không lưu quyền chạy: Mac tải code về thì chạy `chmod +x *.command *.sh` một lần (mục 2.5) |
 | Repo | Để **Private**: README và test có tên máy ảo, môi trường làm việc thật |
-| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.13.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
+| Phiên bản | `__version__` trong `focus/__init__.py` (hiện `2.14.0`), dạng `x.y.z`: sửa lỗi tăng `z`, thêm tính năng tăng `y`, đổi lớn (dữ liệu / cài đặt cũ không dùng được nữa) tăng `x`. Gắn tag `vx.y.z` cho bản chạy ổn. `/status` hiện số phiên bản đang chạy |
 | Lỡ đưa `secrets.env` lên | Xoá file trên GitHub **chưa đủ** (lịch sử vẫn còn): đổi token bot (BotFather `/revoke`) và tạo key AI mới ngay |
 
 Góp ý, báo lỗi: liên hệ người tạo dự án.

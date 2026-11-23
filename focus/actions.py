@@ -447,7 +447,8 @@ def validate(action, args):
 
 ARG_LABELS = {"start": "giờ vào / giờ bật", "end": "giờ ra", "text": "nội dung", "day": "ngày", "reason": "lý do",
               "part": "buổi nghỉ", "state": "trạng thái", "mode": "kiểu", "level": "mức", "tone": "giọng văn",
-              "every": "nhắc", "energy": "năng lượng", "stop": "giờ tắt", "time": "giờ", "reset": "về mặc định"}
+              "every": "nhắc", "energy": "năng lượng", "stop": "giờ tắt", "time": "giờ", "reset": "về mặc định",
+              "mo_ta": "bot sẽ làm"}
 SOURCE_NAMES = {"ai": "AI bóc tách", "rule": "từ khoá (AI không dùng được)"}
 
 
@@ -593,11 +594,18 @@ def _status(bot, args):
     bot.send(bot.status_text())
 
 
+def _hook(bot, field_name, text):
+    """Cùng ghi vào danh sách việc (/viec). Bot giả trong test không có hàm này thì thôi."""
+    fn = getattr(bot, "task_note_hook", None)
+    return fn(field_name, text) if fn else ""
+
+
 def _plan(bot, args):
     if args.get("text"):
         save_note(bot.db, bot.today(), {"plan": args["text"]})
         audit("PLAN_SAVED", args["text"])
-        bot.send("Đã lưu kế hoạch hôm nay. Bắt đầu với việc số 1 nhé.")
+        extra = _hook(bot, "plan", args["text"])
+        bot.send("Đã lưu kế hoạch hôm nay. Bắt đầu với việc số 1 nhé." + (f"\n{extra}" if extra else ""))
     else:
         bot.start_convo("plan", manual=True)
 
@@ -606,14 +614,16 @@ def _note_line(field_name, label):
     def run(bot, args):
         append_note(bot.db, bot.today(), field_name, f"- {args['text']} ({dt.datetime.now():%H:%M})")
         audit("NOTE_" + field_name.upper(), args["text"])
-        bot.send(f"Đã ghi {label}.")
+        extra = _hook(bot, field_name, args["text"]) if field_name in ("issues", "output") else ""
+        bot.send(f"Đã ghi {label}." + (f"\n{extra}" if extra else ""))
     return run
 
 
 def _tomorrow(bot, args):
     save_note(bot.db, bot.today(), {"tomorrow": args["text"]})
     audit("TOMORROW_SAVED", args["text"])
-    bot.send("Đã ghi. Sáng mai mình nhắc việc này đầu tiên.")
+    extra = _hook(bot, "tomorrow", args["text"])
+    bot.send("Đã ghi. Sáng mai mình nhắc việc này đầu tiên." + (f"\n{extra}" if extra else ""))
 
 
 def _energy(bot, args):
@@ -904,6 +914,81 @@ def _pace(bot, args):
     if not off_day(bot.db, cfg, day):
         info = pace.today_status(bot.db, cfg, day, dt.datetime.now().strftime("%H:%M"))
     bot.send(messages.pace_view(info, cfg.get("pace_check_enabled", True), cfg["pace_checkpoints"]))
+
+
+TASK_SWITCH = [("mac dinh", "default"), ("mac_dinh", "default"), ("default", "default"), ("tat", "off"),
+               ("off", "off"), ("bat", "on"), ("on", "on")]
+
+
+def _switch_word(text):
+    """"on" | "off" | "default" khi CẢ tin chỉ là chữ bật/tắt (để «bỏ 2» không bị hiểu là tắt)."""
+    plain = _plain(text).strip(" .!")
+    return next((v for w, v in TASK_SWITCH if plain == w), None)
+
+
+def _viec_check(args, cfg):
+    """Kiểm cú pháp trước khi hỏi OK / chạy; ghi mo_ta (bot sẽ làm gì) lên thẻ xác nhận."""
+    from . import tasks  # import trễ: tasks -> intent -> actions
+    text = (args.get("text") or "").strip()
+    if not text:
+        return None
+    state = _switch_word(text)
+    if state:
+        args["mo_ta"] = {"on": "BẬT", "off": "TẮT", "default": "theo settings.json"}[state] + \
+            " gửi danh sách việc + hỏi cập nhật (đầu ngày và các mốc " + ", ".join((cfg or DEFAULTS).get("task_checkins") or []) + ")"
+        return None
+    try:
+        ops = tasks.parse(text)
+    except tasks.TaskError as e:
+        return str(e)
+    if not ops:  # chữ không phải cú pháp ("danh sách việc hôm nay" -> text "hôm nay"): chỉ xem danh sách
+        args.pop("text", None)
+        return None
+    args["mo_ta"] = tasks.describe(ops)
+    return None
+
+
+def _viec(bot, args):
+    from . import tasks
+    text = (args.get("text") or "").strip()
+    if not text:
+        bot.send(tasks.list_text(bot.db, bot.tasks_ready()))
+        return
+    state = _switch_word(text)
+    if state:
+        prefs.set_switch(bot.cfg, bot.db, "task_checkin_enabled", state)
+        on = bot.cfg["task_checkin_enabled"]
+        audit("TASK_CHECKIN", "on" if on else "off")
+        bot.send(("Đã BẬT" if on else "Đã TẮT") + " gửi danh sách việc + hỏi cập nhật (đầu ngày, mốc "
+                 + ", ".join(bot.cfg.get("task_checkins") or []) + "). "
+                 + ("" if on else "Bot quay lại hỏi «3 việc quan trọng» đầu ngày như trước. ")
+                 + "Danh sách vẫn xem / sửa được bằng /viec.")
+        return
+    ops = tasks.parse(text, bot.today())
+    if ops:
+        bot.apply_tasks(ops)
+
+
+def _baosau(bot, args):
+    from . import progress
+    state = args.get("state")
+    cfg = bot.cfg
+    if state:
+        prefs.set_switch(cfg, bot.db, "focus_report_enabled", state)
+        on = cfg["focus_report_enabled"]
+        audit("FOCUS_REPORT_SET", "on" if on else "off")
+        bot.send(f"Báo giờ tập trung sâu + AI nhận xét: {'ĐANG BẬT' if on else 'ĐANG TẮT'} (mốc "
+                 + ", ".join(cfg.get("focus_reports") or []) + "). Xem ngay lúc nào cũng được: /baosau")
+        return
+    day = bot.today()
+    if off_day(bot.db, cfg, day):
+        bot.send("Hôm nay là ngày nghỉ nên không báo tiến độ tập trung. Xem số liệu: /today")
+        return
+    p = cfg.get("persona") or persona.DEFAULT
+    bot.send(progress.report(cfg, bot.db, day, dt.datetime.now().strftime("%H:%M"), p)
+             + f"\n\nTự báo ở các mốc {', '.join(cfg.get('focus_reports') or [])}: "
+             + ("đang bật" if cfg.get("focus_report_enabled", True) else "đang tắt") + " (/baosau on | off)",
+             raw=True)
 
 
 def _autoenergy(bot, args):
@@ -1539,6 +1624,25 @@ ACTIONS = [
            keywords=["canh bao tien do", "tien do hom nay the nao", "tien do hom nay sao", "tien do the nao",
                      "tien do sao roi", "tien do", "tiendo", "pace", "kip gio ve", "ve dung gio", "kip tien do"],
            view_without_args=True),
+    Action("danh_sach_viec", ["/viec", "/tasks", "/todo"], "Danh sách việc cần làm",
+           "Danh sách việc cần làm (giống Google Tasks): không kèm gì = xem danh sách đánh số; kèm text = cập nhật. "
+           "text viết theo cú pháp: «xong 1 3» (đã xong việc số 1, 3), «xong: tên việc» (xong việc có tên giống vậy, "
+           "dùng khi người dùng nói tên việc mà không nói số), «mới: nội dung» (thêm việc; nhiều việc cách nhau ;), "
+           "«hoãn 2» (để sang ngày làm việc kế), «bỏ 4» (xoá), «sửa 2: nội dung mới», «ưu tiên 3» (làm trước), "
+           "«hạn 2 25/11», «issue: nội dung», «hoàn tác»; nhiều lệnh cách nhau bằng ;. text «on»/«off» = bật/tắt bot "
+           "tự gửi danh sách hỏi cập nhật. Khác ghi_output: ghi_output là ghi việc đã làm ngoài danh sách", _viec,
+           params=[("text", "text", "lệnh cập nhật theo cú pháp, ví dụ «xong 1 3; mới: gọi anh A»", False)],
+           writes=True, confirm="Cập nhật danh sách việc: {mo_ta}", check=_viec_check, view_without_args=True,
+           keywords=["danh sach viec", "viec can lam", "todo", "to do", "task list", "danh sach task",
+                     "cap nhat viec", "cap nhat task", "viec hom nay con gi", "con viec gi"]),
+    Action("bao_tap_trung_sau", ["/baosau", "/focusreport"], "Báo giờ tập trung sâu + AI nhận xét",
+           "Báo ngay giờ tập trung sâu hôm nay tới lúc này so với nhịp cần, kèm AI nhận xét ngắn; on/off bật tắt tự "
+           "báo ở các mốc trong ngày (mặc định 10:17, 12:45, 15:00)", _baosau,
+           params=[("state", "onoff", "on (bật) / off (tắt)", False)], writes=True,
+           confirm="Chuyển tự báo giờ tập trung sâu sang: {state}",
+           keywords=["bao tap trung sau", "bao tap trung", "tap trung sau toi gio", "tap trung duoc bao nhieu gio roi",
+                     "focus report"],
+           view_without_args=True),
     Action("tu_tinh_nang_luong", ["/autoenergy", "/tunangluong"], "Tự tính năng lượng khi chưa chấm",
            "Xem / bật / tắt việc bot tự tính năng lượng 1–5 lúc tổng kết cuối ngày khi bạn chưa chấm, dựa trên số "
            "liệu tập trung (càng tập trung sâu lâu càng cạn)", _autoenergy,
@@ -1624,10 +1728,10 @@ def help_text(cfg=None):
 HELP_GROUPS = [
     ("📊 XEM SỐ LIỆU", ["xem_hom_nay", "xem_trang_thai", "xem_vang", "gui_bao_cao", "xem_tuan", "xem_gio_vang"]),
     ("📝 GHI CHÉP TRONG NGÀY", ["ghi_ke_hoach", "ghi_output", "ghi_issue", "ghi_phan_tam", "ghi_viec_ngay_mai",
-                               "ghi_nang_luong", "ghi_gio_as400", "tong_ket_ngay"]),
+                               "ghi_nang_luong", "ghi_gio_as400", "tong_ket_ngay", "danh_sach_viec"]),
     ("🌴 NGÀY NGHỈ, NGHỈ PHÉP, TẠM DỪNG", ["nghi_phep", "bao_nghi", "bao_di_lam", "tam_dung", "tiep_tuc"]),
     ("🤖 AI, ĐỘNG VIÊN, CÀI ĐẶT", ["hoi_ai", "xin_cau_dong_luc", "xin_cau_kinh_thanh", "bat_tat_ai_danh_gia",
-                                  "cai_khich_le", "doi_giong", "doi_muc_nhac", "canh_bao_tien_do",
+                                  "cai_khich_le", "doi_giong", "doi_muc_nhac", "canh_bao_tien_do", "bao_tap_trung_sau",
                                   "tu_tinh_nang_luong", "nhac_nghi_ngoi", "nhac_uong_nuoc"]),
     ("🛠 HỆ THỐNG", ["gio_bot", "chay_24_24", "che_do_lam_bu", "tat_app", "xem_ai", "xoa_cache_ai", "xem_hieu_nang", "huy", "tro_giup"]),
 ]
@@ -1649,6 +1753,14 @@ EXAMPLES = {
     "ghi_ke_hoach": ("Ghi kế hoạch hôm nay. Không kèm nội dung: bot hiện kế hoạch đã lưu rồi hỏi lại (gõ /cancel "
                      "để giữ nguyên). Xem lại kế hoạch: /today",
                      ["/plan fix job đối soát, viết spec API", "hôm nay mình sẽ fix job đối soát"]),
+    "danh_sach_viec": ("Danh sách việc cần làm (như Google Tasks), một nơi chung cho /plan, /issue, /tmrtask. "
+                       "Việc chưa xong tự sang hôm sau. Gõ thẳng không cần /viec cũng được: xong 1 3 · mới: việc mới · "
+                       "hoãn 2 · bỏ 4 · sửa 2: chữ mới · ưu tiên 3 · hạn 2 25/11 · hoàn tác. /viec off: thôi tự hỏi",
+                       ["/viec", "/viec xong 1 3", "/viec mới: test batch ABC; gửi mail SH", "/viec hoãn 2",
+                        "/viec off", "danh sách việc hôm nay"]),
+    "bao_tap_trung_sau": ("Giờ tập trung sâu tới lúc này so với nhịp cần, kèm AI nhận xét. Bot tự báo lúc 10:17, 12:45, "
+                          "15:00 (12:45 gộp với hỏi cập nhật việc)",
+                          ["/baosau", "/baosau off", "báo tập trung sâu"]),
     "ghi_output": ("Ghi việc vừa làm xong", ["/output xong test CL0123", "vừa xong deploy UAT"]),
     "ghi_issue": ("Ghi ngay khi bị chặn: VDI chậm, thiếu quyền, chờ người khác",
                   ["/issue VDI chậm từ 9h", "bị chặn vì thiếu quyền vào thư viện PRDLIB"]),

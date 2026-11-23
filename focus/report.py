@@ -186,7 +186,7 @@ def _write(path, text):
 
 def write_report(db, cfg, day):
     """Tạo file HTML (không gọi AI: chỉ chèn lời khuyên AI nếu đã có sẵn trong cache)."""
-    from . import pending  # import trễ: pending -> intent -> actions -> report
+    from . import tasks  # import trễ: tasks -> intent -> actions -> report
     a = analyze(db, cfg, day)
     base = dt.date.fromisoformat(day)
     week = [daily_stats(db, cfg, (base - dt.timedelta(days=i)).isoformat()) for i in range(6, -1, -1)]
@@ -194,7 +194,7 @@ def write_report(db, cfg, day):
                         (f"review:{day}:%",)).fetchone()
     extra = {"streak": streak(db, cfg, day), "review": review[0] if review else "",
              "distractions": distraction_stats(db, cfg, day), "ot_history": ot_history(db, cfg, day),
-             "late_ot": late_ot(db, cfg, day), "pending": pending.pending_after(db, cfg, day, off_day)}
+             "late_ot": late_ot(db, cfg, day), "pending": tasks.carry_after(db, cfg, day, off_day)}
     path = os.path.join(cfg["report_dir"], f"focus-{day}.html")
     _write(path, render_html(cfg, a, get_note(db, day), [w for w in week if w], extra))
     return path, a
