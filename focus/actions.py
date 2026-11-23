@@ -1653,7 +1653,7 @@ ACTIONS = [
            writes=True, confirm="Cập nhật danh sách việc: {mo_ta}", check=_viec_check, view_without_args=True,
            keywords=["danh sach viec", "viec can lam", "todo", "to do", "task list", "danh sach task",
                      "cap nhat viec", "cap nhat task", "viec hom nay con gi", "con viec gi"]),
-    Action("bao_tap_trung_sau", ["/baosau", "/focusreport"], "Báo giờ tập trung sâu + AI nhận xét",
+    Action("bao_tap_trung_sau", ["/baosau", "/focusreport"], "Xem giờ tập trung sâu ngay + AI nhận xét",
            "Báo ngay giờ tập trung sâu hôm nay tới lúc này so với nhịp cần, kèm AI nhận xét ngắn; on/off bật tắt tự "
            "báo ở các mốc trong ngày (mặc định 10:17, 12:45, 15:00)", _baosau,
            params=[("state", "onoff", "on (bật) / off (tắt)", False)], writes=True,
@@ -1908,9 +1908,13 @@ def full_help(cfg):
     return "\n".join(lines)
 
 
+MENU_FIRST = ("bao_tap_trung_sau",)  # lên đầu menu lệnh Telegram cho tiện bấm (Khang 23/11)
+
+
 def bot_commands():
-    """Danh sách cho setMyCommands (menu lệnh trong Telegram)."""
-    return [{"command": a.command[1:], "description": a.title[:256]} for a in ACTIONS if a.commands]
+    """Danh sách cho setMyCommands (menu lệnh trong Telegram). MENU_FIRST đứng đầu, còn lại theo ACTIONS."""
+    ordered = [BY_NAME[n] for n in MENU_FIRST] + [a for a in ACTIONS if a.name not in MENU_FIRST]
+    return [{"command": a.command[1:], "description": a.title[:256]} for a in ordered if a.commands]
 
 
 def catalog():

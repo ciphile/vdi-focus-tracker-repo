@@ -466,3 +466,13 @@ class HtmlTasksTest(TempCase):
             html = f.read()
         self.assertNotIn("Danh sách việc hôm nay", html)
         self.assertIn("Kế hoạch đầu ngày", html)
+
+
+class MenuTest(TempCase):
+    def test_baosau_first_in_menu(self):
+        from focus.actions import ACTIONS, bot_commands
+        cmds = bot_commands()
+        self.assertEqual(cmds[0]["command"], "baosau")
+        self.assertIn("Xem giờ tập trung sâu ngay", cmds[0]["description"])
+        self.assertEqual(len(cmds), len([a for a in ACTIONS if a.commands]))
+        self.assertEqual(len({c["command"] for c in cmds}), len(cmds))

@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Tác giả | Khang Nguyen, viết cùng AI Claude (Anthropic). App dùng chung cho đồng nghiệp: mỗi người tự cài trên máy mình, tự tạo bot Telegram và key AI riêng |
-| Phiên bản | 2.14.1 (`focus/__init__.py`) |
+| Phiên bản | 2.14.2 (`focus/__init__.py`) |
 | Chạy trên | Windows 10/11 và macOS. Citrix mở bằng app (Workspace / Desktop Viewer) hoặc bằng trình duyệt (mục [4.2](#42-trạng-thái-cửa-sổ-vdi-phóng-to-thu-nhỏ-vừa-vừa-ẩn-trình-duyệt)) |
 | Cần | Python 3.9+. **Chỉ dùng thư viện chuẩn** của Python (`requirements.txt` trống), không cần `pip install` |
 | Ngôn ngữ bot | Tiếng Việt |
@@ -1759,7 +1759,7 @@ Lịch lễ 2026: bảng có sẵn trong app (chưa tải được bản MOM) ·
 AI: chưa cấu hình key, đang dùng nội dung có sẵn.
 
 🖥️ HỆ THỐNG
-Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.14.1
+Dung lượng app: 137.1 KB (DB 136.6 KB, backup 0 B, log 489 B) · tự dọn mỗi ngày · phiên bản 2.14.2
 ```
 
 Khi tracker đang chạy: "LÚC NÀY" cho biết trong VDI / VDI thu nhỏ / nằm sau / không thấy / máy khoá, app đang dùng, số giây chưa chạm phím, hôm nay nghỉ hay nghỉ phép; "HÔM NAY" thêm số liệu, điểm, số lần sao nhãng và số lần đã nhắc từng loại (đếm từ `audit.log`); "HỆ THỐNG" thêm cách đọc trạng thái máy (Win32 / CoreGraphics), cảnh báo nhận diện VDI (tối đa 5), CPU/RAM.
@@ -2028,7 +2028,7 @@ Việc: xong 1 hôm nay, còn 4 việc
 | Mốc 12:45 trùng mốc hỏi danh sách việc | Một tin: báo tập trung + danh sách + câu hỏi cập nhật |
 | Máy ngủ / tắt lúc tới mốc | Gửi bù khi thức dậy, trễ tối đa 60 phút (cộng giờ trưa nếu nằm giữa) |
 | Cuối tuần, lễ, nghỉ phép cả ngày, `/pause` | Không gửi. Ngày làm việc có OT: như thường |
-| `/baosau` | Báo ngay lúc này |
+| `/baosau` | Báo ngay lúc này. Lệnh này đứng đầu menu lệnh Telegram (nút Menu) cho tiện bấm |
 | `/baosau off` · `/baosau on` | Tắt / bật báo tự động |
 
 Cảnh báo tiến độ cũ (`/pace`, mục 4.6) giờ chỉ còn mốc 15:30, vì 10:17 và 12:45 đã có tin báo này.
